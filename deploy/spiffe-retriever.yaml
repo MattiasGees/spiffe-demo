@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spiffe-retriever
+  namespace: spiffe-demo
+  labels:
+    app: spiffe-retriever
+spec:
+  selector:
+    matchLabels:
+      app: spiffe-retriever
+  template:
+    metadata:
+      labels:
+        app: spiffe-retriever
+    spec:
+      containers:
+        - name: spiffe-retriever
+          image: mattiasgees/spiffe-retriever@sha256:e217e4e18af7a198a82a04623f74dbaefb14c5563ed0a172d664768eb67335b4
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: spiffe-workload-api
+              mountPath: /spiffe-workload-api
+              readOnly: true
+      volumes:
+      - csi:
+          driver: csi.spiffe.io
+          readOnly: true
+        name: spiffe-workload-api
