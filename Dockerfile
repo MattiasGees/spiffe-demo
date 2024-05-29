@@ -4,7 +4,6 @@ ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
-ARG APPPATH
 
 ARG GOPROXY
 
@@ -15,7 +14,7 @@ COPY . .
 RUN GOPROXY=$GOPROXY go mod download
 
 # Build
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s" -o bin/app ${APPPATH}/main.go
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s" -o bin/spiffe-demo
 
 FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine AS certs-builder
 
@@ -26,7 +25,7 @@ FROM --platform=${TARGETPLATFORM:-linux/amd64} scratch
 
 WORKDIR /
 USER 1001
-COPY --from=builder /workspace/bin/app /usr/bin/app
+COPY --from=builder /workspace/bin/spiffe-demo /usr/bin/spiffe-demo
 COPY --from=certs-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
-ENTRYPOINT ["/usr/bin/app"]
+ENTRYPOINT ["/usr/bin/spiffe-demo"]

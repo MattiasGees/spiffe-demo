@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spiffe-backend
+  namespace: spiffe-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spiffe-backend
+  namespace: spiffe-demo
+  labels:
+    app: spiffe-backend
+spec:
+  selector:
+    matchLabels:
+      app: spiffe-backend
+  template:
+    metadata:
+      labels:
+        app: spiffe-backend
+    spec:
+      serviceAccountName: spiffe-backend
+      containers:
+        - name: spiffe-backend
+          image: mattiasgees/spiffe-demo:latest
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: spiffe-workload-api
+              mountPath: /spiffe-workload-api
+              readOnly: true
+          args:
+          - backend
+          - --authorized-spiffe
+          - "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-customer"
+          - --server-address
+          - 0.0.0.0:8443
+          - --socket-path
+          - unix:///spiffe-workload-api/socket
+          ports:
+          - containerPort: 8443
+            name: https
+            protocol: TCP
+      volumes:
+      - csi:
+          driver: csi.spiffe.io
+          readOnly: true
+        name: spiffe-workload-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spiffe-backend
+  namespace: spiffe-demo
+spec:
+  selector:
+    app: spiffe-backend
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 8443
