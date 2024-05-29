@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spiffe-client
+  namespace: spiffe-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spiffe-client
+  namespace: spiffe-demo
+  labels:
+    app: spiffe-client
+spec:
+  selector:
+    matchLabels:
+      app: spiffe-client
+  template:
+    metadata:
+      labels:
+        app: spiffe-client
+    spec:
+      serviceAccountName: spiffe-client
+      containers:
+        - name: spiffe-client
+          image: mattiasgees/spiffe-client:latest
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: spiffe-workload-api
+              mountPath: /spiffe-workload-api
+              readOnly: true
+      volumes:
+      - csi:
+          driver: csi.spiffe.io
+          readOnly: true
+        name: spiffe-workload-api
