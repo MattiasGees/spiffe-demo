@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
+	"github.com/spiffe/go-spiffe/v2/spiffetls"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
@@ -48,7 +49,7 @@ func (c *CustomerService) run() error {
 
 func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the rootHandler from %s", r.RemoteAddr)
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "text/html")
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -57,7 +58,7 @@ func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	// If socket path is not defined using `workloadapi.SourceOption`, value from environment variable `SPIFFE_ENDPOINT_SOCKET` is used.
 	source, err := workloadapi.NewX509Source(ctx, workloadapi.WithClientOptions(workloadapi.WithAddr(c.socketPath)))
 	if err != nil {
-		log.Printf("unable to create X509Source: %w", err)
+		log.Printf("unable to create X509Source: %v", err)
 	}
 	defer source.Close()
 
@@ -74,16 +75,22 @@ func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	res, err := client.Get(c.backendService)
 	if err != nil {
-		log.Printf("error connecting to %q: %w", c.backendService, err)
+		log.Printf("error connecting to %q: %v", c.backendService, err)
 	}
 
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("unable to read body: %w", err)
+		log.Printf("unable to read body: %v", err)
 	}
 
-	fmt.Fprintf(w, "Server says: %q", body)
+	serverSPIFFEID, err := spiffetls.PeerIDFromConnectionState(*res.TLS)
+	if err != nil {
+		log.Printf("Wasn't able to determine the SPIFFE ID of the server: %v", err)
+	}
+
+	fmt.Fprintf(w, "<p>Got a response from: %s</p>", serverSPIFFEID.String())
+	fmt.Fprintf(w, "<p>Server says: %q</p>", body)
 }
 
 func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request) {
