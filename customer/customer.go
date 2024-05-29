@@ -73,18 +73,18 @@ func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	res, err := client.Get(c.backendService)
+	resp, err := client.Get(c.backendService)
 	if err != nil {
 		log.Printf("error connecting to %q: %v", c.backendService, err)
 	}
 
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("unable to read body: %v", err)
 	}
 
-	serverSPIFFEID, err := spiffetls.PeerIDFromConnectionState(*res.TLS)
+	serverSPIFFEID, err := spiffetls.PeerIDFromConnectionState(*resp.TLS)
 	if err != nil {
 		log.Printf("Wasn't able to determine the SPIFFE ID of the server: %v", err)
 	}

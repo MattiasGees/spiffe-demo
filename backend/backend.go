@@ -38,7 +38,10 @@ func (b *BackendService) run(ctx context.Context) error {
 	// Set up a `/` resource handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Request received from %s", r.RemoteAddr)
-		_, _ = io.WriteString(w, "Successfully connected to the backend service!!!")
+		currentTime := time.Now()
+		formattedTime := currentTime.Format("02/01/06 15:04:05")
+		text := fmt.Sprintf("%s: Successfully connected to the backend service!!!", formattedTime)
+		_, _ = io.WriteString(w, text)
 	})
 
 	// Create a `workloadapi.X509Source`, it will connect to Workload API using provided socket.
