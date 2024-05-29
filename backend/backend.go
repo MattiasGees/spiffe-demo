@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
+	"github.com/spiffe/go-spiffe/v2/spiffetls"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
@@ -42,6 +43,11 @@ func (b *BackendService) run(ctx context.Context) error {
 		formattedTime := currentTime.Format("02/01/06 15:04:05")
 		text := fmt.Sprintf("%s: Successfully connected to the backend service!!!", formattedTime)
 		_, _ = io.WriteString(w, text)
+		requestorSPIFFEID, err := spiffetls.PeerIDFromConnectionState(*r.TLS)
+		if err != nil {
+			log.Printf("Wasn't able to determine the SPIFFE ID of the requestor: %v", err)
+		}
+		log.Printf("Responded to %s with the following message: %s", requestorSPIFFEID.String(), text)
 	})
 
 	// Create a `workloadapi.X509Source`, it will connect to Workload API using provided socket.
