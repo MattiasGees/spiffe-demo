@@ -37,5 +37,5 @@ var customerCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(customerCmd)
-	customerCmd.PersistentFlags().StringVarP(&backendService, "backend-service", "b", "localhost:8080", "Location on where to reach the backend service")
+	customerCmd.PersistentFlags().StringVarP(&backendService, "backend-service", "b", "https://localhost:8080", "Location on where to reach the backend service")
 }

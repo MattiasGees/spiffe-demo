@@ -23,7 +23,7 @@ spec:
       serviceAccountName: spiffe-backend
       containers:
         - name: spiffe-backend
-          image: mattiasgees/spiffe-demo:latest
+          image: mattiasgees/spiffe-demo@sha256:614feb1064ac4392bf0164da2a7a69831faba52ad33ae6c509d697c62aa8e2aa
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api

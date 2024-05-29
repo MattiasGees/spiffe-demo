@@ -22,3 +22,6 @@ go.work
 
 # Certs folders
 certs
+
+# Compiled binary
+spiffe-demo

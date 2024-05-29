@@ -1,7 +1,6 @@
 package customer
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
-	"github.com/spiffe/go-spiffe/v2/spiffetls"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
@@ -35,41 +33,9 @@ func StartServer(socketPath, spiffeAuthz, serverAddress, backendService string) 
 	}
 }
 
-func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
-
-	// Allowed SPIFFE ID
-	serverID := spiffeid.RequireFromString(c.spiffeAuthz)
-
-	// Create a TLS connection.
-	// The client expects the server to present an SVID with the spiffeID: 'spiffe://example.org/server'
-	//
-	// An alternative when creating Dial is using `spiffetls.Dial` that uses environment variable `SPIFFE_ENDPOINT_SOCKET`
-	conn, err := spiffetls.DialWithMode(ctx, "tcp", c.backendService,
-		spiffetls.MTLSClientWithSourceOptions(
-			tlsconfig.AuthorizeID(serverID),
-			workloadapi.WithClientOptions(workloadapi.WithAddr(c.socketPath)),
-		))
-	if err != nil {
-		fmt.Fprintf(w, "unable to create TLS connection: %w", err)
-	}
-	defer conn.Close()
-
-	// Send a message to the server using the TLS connection
-	fmt.Fprintf(conn, "Hello server\n")
-
-	// Read server response
-	status, err := bufio.NewReader(conn).ReadString('\n')
-	if err != nil && err != io.EOF {
-		fmt.Fprintf(w, "unable to read server response: %w", err)
-	}
-	fmt.Fprintf(w, "Server says: %q", status)
-}
-
 func (c *CustomerService) run() error {
 	http.HandleFunc("/", c.rootHandler)
+	http.HandleFunc("/spifferetriever", c.spiffeRetriever)
 
 	log.Printf("Starting server at %s", c.serverAddress)
 
@@ -78,4 +44,48 @@ func (c *CustomerService) run() error {
 	}
 
 	return nil
+}
+
+func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Handling a request in the rootHandler from %s", r.RemoteAddr)
+	w.Header().Set("Content-Type", "text/plain")
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	// Create a `workloadapi.X509Source`, it will connect to Workload API using provided socket path
+	// If socket path is not defined using `workloadapi.SourceOption`, value from environment variable `SPIFFE_ENDPOINT_SOCKET` is used.
+	source, err := workloadapi.NewX509Source(ctx, workloadapi.WithClientOptions(workloadapi.WithAddr(c.socketPath)))
+	if err != nil {
+		log.Printf("unable to create X509Source: %w", err)
+	}
+	defer source.Close()
+
+	// Allowed SPIFFE ID
+	serverID := spiffeid.RequireFromString(c.spiffeAuthz)
+
+	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID `spiffe://example.org/server`
+	tlsConfig := tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeID(serverID))
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	res, err := client.Get(c.backendService)
+	if err != nil {
+		log.Printf("error connecting to %q: %w", c.backendService, err)
+	}
+
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Printf("unable to read body: %w", err)
+	}
+
+	fmt.Fprintf(w, "Server says: %q", body)
+}
+
+func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "To be implememted")
 }

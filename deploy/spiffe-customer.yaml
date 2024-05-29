@@ -23,7 +23,7 @@ spec:
       serviceAccountName: spiffe-customer
       containers:
         - name: spiffe-customer
-          image: mattiasgees/spiffe-demo@sha256:b01b3c045ccfec9f52ced0a246c03dd112770e7db5b454d5b6e51d6d50a8be7f
+          image: mattiasgees/spiffe-demo@sha256:614feb1064ac4392bf0164da2a7a69831faba52ad33ae6c509d697c62aa8e2aa
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
@@ -38,7 +38,7 @@ spec:
           - --socket-path
           - unix:///spiffe-workload-api/socket
           - --backend-service
-          - spiffe-backend.spiffe-demo.svc.cluster.local:443
+          - https://spiffe-backend.spiffe-demo.svc.cluster.local
           ports:
           - containerPort: 8080
             name: http
