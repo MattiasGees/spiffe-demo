@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/mattiasgees/spiffe-demo/customer"
+	"github.com/mattiasgees/spiffe-demo/pkg/customer"
 	"github.com/spf13/cobra"
 )
 
