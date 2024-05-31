@@ -21,7 +21,6 @@ import (
 )
 
 type CustomerService struct {
-	socketPath     string
 	spiffeAuthz    string
 	serverAddress  string
 	backendService string
@@ -30,9 +29,8 @@ type CustomerService struct {
 	awsRegion      string
 }
 
-func StartServer(socketPath, spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion string) {
+func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion string) {
 	customerService := CustomerService{
-		socketPath:     socketPath,
 		spiffeAuthz:    spiffeAuthz,
 		serverAddress:  serverAddress,
 		backendService: backendService,
@@ -70,7 +68,7 @@ func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create a `workloadapi.X509Source`, it will connect to Workload API using provided socket path
 	// If socket path is not defined using `workloadapi.SourceOption`, value from environment variable `SPIFFE_ENDPOINT_SOCKET` is used.
-	source, err := workloadapi.NewX509Source(ctx, workloadapi.WithClientOptions(workloadapi.WithAddr(c.socketPath)))
+	source, err := workloadapi.NewX509Source(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to create X509Source: %v", err), http.StatusInternalServerError)
 	}
@@ -113,7 +111,7 @@ func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	client, err := workloadapi.New(ctx, workloadapi.WithAddr(c.socketPath))
+	client, err := workloadapi.New(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to create workload API client: %v", err), http.StatusInternalServerError)
 	}

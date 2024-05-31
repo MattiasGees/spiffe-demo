@@ -23,7 +23,7 @@ spec:
       serviceAccountName: spiffe-backend
       containers:
         - name: spiffe-backend
-          image: mattiasgees/spiffe-demo@sha256:35ad0df7a512d71a5dd39c91f1d3ac324f512048212681c1c6676c133118b6b4
+          image: mattiasgees/spiffe-demo@sha256:924ffbf442f3bddef357a7098936bf024b08bf9c2528c93ef4f185c05b992713
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
@@ -35,8 +35,9 @@ spec:
           - "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-customer"
           - --server-address
           - 0.0.0.0:8443
-          - --socket-path
-          - unix:///spiffe-workload-api/socket
+          env:
+          - name: SPIFFE_ENDPOINT_SOCKET
+            value: "unix:///spiffe-workload-api/socket"
           ports:
           - containerPort: 8443
             name: https

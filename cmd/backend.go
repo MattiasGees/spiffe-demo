@@ -26,7 +26,7 @@ var backendCmd = &cobra.Command{
 	Long: `This starts a simple backend service that will be exposes as an mTLS SPIFFE Service.
 	It will validate incoming requests based on a SPIFFE identity`,
 	Run: func(cmd *cobra.Command, args []string) {
-		backend.StartServer(socketPath, spiffeAuthz, serverAddress)
+		backend.StartServer(spiffeAuthz, serverAddress)
 	},
 }
 

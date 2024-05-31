@@ -34,7 +34,7 @@ var customerCmd = &cobra.Command{
 	Long: `The customer service is the endpoints that serves requests to customers.
 	It connects to the backend service and relays the message back to the customer`,
 	Run: func(cmd *cobra.Command, args []string) {
-		customer.StartServer(socketPath, spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion)
+		customer.StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion)
 	},
 }
 

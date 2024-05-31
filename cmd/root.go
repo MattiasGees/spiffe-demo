@@ -23,7 +23,6 @@ import (
 
 var (
 	spiffeAuthz   string
-	socketPath    string
 	serverAddress string
 )
 
@@ -48,6 +47,5 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	rootCmd.PersistentFlags().StringVarP(&spiffeAuthz, "authorized-spiffe", "a", "", "The SPIFFE Identity that is authorized to talk to this service")
-	rootCmd.PersistentFlags().StringVarP(&socketPath, "socket-path", "s", "unix:///spiffe-workload-api/socket", "The path to the SPIFFE Socket")
 	rootCmd.PersistentFlags().StringVarP(&serverAddress, "server-address", "l", "127.0.0.1:8080", "How do we want to expose our server")
 }
