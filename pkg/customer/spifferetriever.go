@@ -1,9 +1,17 @@
 package customer
 
 import (
+	"context"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"fmt"
+	"html/template"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
 
 type CertificateDetails struct {
@@ -94,6 +102,81 @@ const htmlTemplate = `
 </body>
 </html>
 `
+
+func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Handling a request in the SPIFFE Retriever from %s", r.RemoteAddr)
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	client, err := workloadapi.New(ctx)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Unable to create workload API client: %v", err), http.StatusInternalServerError)
+	}
+	defer client.Close()
+
+	x509SVIDs, err := client.FetchX509SVIDs(ctx)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Unable to fetch X.509 SVIDs: %v", err), http.StatusInternalServerError)
+	}
+
+	var certificates []CertificateDetails
+	for _, x509SVID := range x509SVIDs {
+
+		for _, cert := range x509SVID.Certificates {
+			details := CertificateDetails{
+				Issuer:             cert.Issuer.String(),
+				Subject:            cert.Subject.String(),
+				NotBefore:          cert.NotBefore.String(),
+				NotAfter:           cert.NotAfter.String(),
+				SerialNumber:       cert.SerialNumber.String(),
+				SignatureAlgorithm: cert.SignatureAlgorithm.String(),
+				PublicKeyAlgorithm: cert.PublicKeyAlgorithm.String(),
+				Version:            cert.Version,
+				URIs:               extractURIs(cert),
+				Extensions:         extractExtensions(cert.Extensions),
+			}
+
+			certificates = append(certificates, details)
+		}
+	}
+
+	JWTBundles, err := client.FetchJWTBundles(ctx)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Unable to fetch JWT Bundles: %v", err), http.StatusInternalServerError)
+	}
+
+	var bundles []JWTBundle
+	for _, jwtbundle := range JWTBundles.Bundles() {
+		var bundle JWTBundle
+		jwt, err := jwtbundle.Marshal()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Unable to marshal JWT Bundle: %v", err), http.StatusInternalServerError)
+		}
+		err = json.Unmarshal(jwt, &bundle)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error parsing JSON: %v", err), http.StatusInternalServerError)
+		}
+		bundles = append(bundles, bundle)
+	}
+
+	tmpl, err := template.New("cert").Parse(htmlTemplate)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error creating template: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	pageData := PageData{
+		Certificates: certificates,
+		Bundles:      bundles,
+	}
+
+	err = tmpl.Execute(w, pageData)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error executing template: %v", err), http.StatusInternalServerError)
+		return
+	}
+}
 
 func extractURIs(cert *x509.Certificate) []string {
 	var uris []string
