@@ -43,6 +43,6 @@ func init() {
 	customerCmd.PersistentFlags().StringVarP(&backendService, "backend-service", "b", "https://localhost:8080", "Location on where to reach the backend service")
 	customerCmd.PersistentFlags().StringVarP(&s3Bucket, "s3-bucket", "", "", "Bucket name")
 	customerCmd.PersistentFlags().StringVarP(&s3Filepath, "s3-filepath", "", "testfile", "Path to the file of the S3 bucket")
-	customerCmd.PersistentFlags().StringVarP(&awsRegion, "aws-region", "", "eu-west1", "AWS Region where the S3 bucket can be found ")
+	customerCmd.PersistentFlags().StringVarP(&awsRegion, "aws-region", "", "eu-west2", "AWS Region where the S3 bucket can be found ")
 
 }

@@ -16,16 +16,27 @@ RUN GOPROXY=$GOPROXY go mod download
 # Build
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s" -o bin/spiffe-demo
 
-FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine AS certs-builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} alpine AS tools-builder
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
 
 # Install ca-certificates package
 RUN apk --update add ca-certificates
 
-FROM --platform=${TARGETPLATFORM:-linux/amd64} scratch
+# Download & unpack AWS Assume Helper
+RUN wget https://github.com/MattiasGees/spiffe-aws-assume-role/releases/download/v0.0.1-alpha2/spiffe-aws-assume-role-v0.0.1-alpha2-${TARGETOS}-${TARGETARCH}.tar.gz 
+RUN tar zvxf spiffe-aws-assume-role-v0.0.1-alpha2-${TARGETOS}-${TARGETARCH}.tar.gz 
+
+FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine
 
 WORKDIR /
 USER 1001
+
 COPY --from=builder /workspace/bin/spiffe-demo /usr/bin/spiffe-demo
-COPY --from=certs-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=tools-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=tools-builder /spiffe-aws-assume-role /usr/bin/spiffe-aws-assume-role
 
 ENTRYPOINT ["/usr/bin/spiffe-demo"]

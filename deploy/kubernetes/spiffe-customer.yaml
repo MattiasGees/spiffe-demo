@@ -21,14 +21,35 @@ spec:
         app: spiffe-customer
     spec:
       serviceAccountName: spiffe-customer
+      initContainers:
+        - name: init-container
+          image:  mattiasgees/spiffe-demo-init:latest
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: aws-config
+              mountPath: /tmp/aws
+            - name: spiffe-workload-api
+              mountPath: /spiffe-workload-api
+              readOnly: true
+          env:
+          - name: AWS_ROLE_ARN
+            value: "arn:aws:iam::228615251467:role/demo-spiffe-role"
+          - name: JWT_AUDIENCE
+            value: "demo"
+          - name: SPIFFE_ENDPOINT_SOCKET
+            value: "unix:///spiffe-workload-api/socket"
+          - name: SPIFFE_ID
+            value: "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-customer"
       containers:
         - name: spiffe-customer
-          image: mattiasgees/spiffe-demo@sha256:dbf39fe200458bde615c2780dd433b762412aeb4aa4f0d24e087bff6de8b8c4c
+          image: mattiasgees/spiffe-demo@sha256:35ad0df7a512d71a5dd39c91f1d3ac324f512048212681c1c6676c133118b6b4
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
               mountPath: /spiffe-workload-api
               readOnly: true
+            - name: aws-config
+              mountPath: /tmp/aws
           args:
           - customer
           - --authorized-spiffe
@@ -39,15 +60,37 @@ spec:
           - unix:///spiffe-workload-api/socket
           - --backend-service
           - https://spiffe-backend.spiffe-demo.svc.cluster.local
+          - --aws-region
+          - eu-west-2
+          - --s3-bucket
+          - mattias-spiffe-demo
+          env:
+          - name: AWS_CONFIG_FILE
+            value: "/tmp/aws/config"
           ports:
           - containerPort: 8080
             name: http
             protocol: TCP
+        # - name: spire-tools
+        #   image: mattiasgees/spire-tools:latest
+        #   imagePullPolicy: Always
+        #   env:
+        #   - name: AWS_CONFIG_FILE
+        #     value: "/tmp/aws/config"
+        #   volumeMounts:
+        #     - name: spiffe-workload-api
+        #       mountPath: /spiffe-workload-api
+        #       readOnly: true
+        #     - name: aws-config
+        #       mountPath: /tmp/aws
       volumes:
       - csi:
           driver: csi.spiffe.io
           readOnly: true
         name: spiffe-workload-api
+      - name: aws-config
+        emptyDir:
+          medium: Memory
 ---
 apiVersion: v1
 kind: Service
