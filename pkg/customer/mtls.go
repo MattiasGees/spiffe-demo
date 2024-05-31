@@ -26,6 +26,7 @@ func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	source, err := workloadapi.NewX509Source(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to create X509Source: %v", err), http.StatusInternalServerError)
+		return
 	}
 	defer source.Close()
 
@@ -43,17 +44,20 @@ func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Get(c.backendService)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error connecting to %q: %v", c.backendService, err), http.StatusInternalServerError)
+		return
 	}
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to read body: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	serverSPIFFEID, err := spiffetls.PeerIDFromConnectionState(*resp.TLS)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Wasn't able to determine the SPIFFE ID of the server: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Fprintf(w, "<p>Got a response from: %s</p>", serverSPIFFEID.String())

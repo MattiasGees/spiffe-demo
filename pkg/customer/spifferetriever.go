@@ -112,12 +112,14 @@ func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request
 	client, err := workloadapi.New(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to create workload API client: %v", err), http.StatusInternalServerError)
+		return
 	}
 	defer client.Close()
 
 	x509SVIDs, err := client.FetchX509SVIDs(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to fetch X.509 SVIDs: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	var certificates []CertificateDetails
@@ -144,6 +146,7 @@ func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request
 	JWTBundles, err := client.FetchJWTBundles(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to fetch JWT Bundles: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	var bundles []JWTBundle
@@ -152,10 +155,12 @@ func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request
 		jwt, err := jwtbundle.Marshal()
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Unable to marshal JWT Bundle: %v", err), http.StatusInternalServerError)
+			return
 		}
 		err = json.Unmarshal(jwt, &bundle)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error parsing JSON: %v", err), http.StatusInternalServerError)
+			return
 		}
 		bundles = append(bundles, bundle)
 	}

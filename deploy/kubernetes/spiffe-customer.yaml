@@ -42,7 +42,7 @@ spec:
             value: "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-customer"
       containers:
         - name: spiffe-customer
-          image: mattiasgees/spiffe-demo@sha256:924ffbf442f3bddef357a7098936bf024b08bf9c2528c93ef4f185c05b992713
+          image: mattiasgees/spiffe-demo@sha256:2ed1c6eac8cc2e1f327ba5ed9994d12df2d3a705ac8442e6a6f66563693ab2ac
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
@@ -65,6 +65,8 @@ spec:
           env:
           - name: AWS_CONFIG_FILE
             value: "/tmp/aws/config"
+          - name: AWS_SDK_LOAD_CONFIG
+            value: "1"
           - name: SPIFFE_ENDPOINT_SOCKET
             value: "unix:///spiffe-workload-api/socket"
           ports:

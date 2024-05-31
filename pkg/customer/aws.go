@@ -53,17 +53,20 @@ func (c *CustomerService) awsRetrievalHandler(w http.ResponseWriter, r *http.Req
 	err = tmpl.Execute(w, string(content))
 	if err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
+		return
 	}
 }
 
 func (c *CustomerService) awsPutHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the AWS Put Handler from %s", r.RemoteAddr)
+	verbose := true
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(c.awsRegion),
+		Region:                        aws.String(c.awsRegion),
+		CredentialsChainVerboseErrors: &verbose,
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create session, %v", err), http.StatusInternalServerError)
-
+		return
 	}
 
 	svc := s3.New(sess)
@@ -76,6 +79,7 @@ func (c *CustomerService) awsPutHandler(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to upload %q to %q, %v", c.s3Filepath, c.s3Bucket, err), http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Fprintf(w, "Successfully uploaded %q to %q\n", c.s3Filepath, c.s3Bucket)
