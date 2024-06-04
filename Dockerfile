@@ -27,8 +27,8 @@ ARG TARGETARCH
 RUN apk --update add ca-certificates
 
 # Download & unpack AWS Assume Helper
-RUN wget https://github.com/MattiasGees/spiffe-aws-assume-role/releases/download/v0.0.1-alpha3/spiffe-aws-assume-role-v0.0.1-alpha3-${TARGETOS}-${TARGETARCH}.tar.gz
-RUN tar zvxf spiffe-aws-assume-role-v0.0.1-alpha3-${TARGETOS}-${TARGETARCH}.tar.gz
+RUN wget https://github.com/MattiasGees/spiffe-aws-assume-role/releases/download/v0.0.1-alpha4/spiffe-aws-assume-role-v0.0.1-alpha4-${TARGETOS}-${TARGETARCH}.tar.gz
+RUN tar zvxf spiffe-aws-assume-role-v0.0.1-alpha4-${TARGETOS}-${TARGETARCH}.tar.gz
 RUN chmod +x spiffe-aws-assume-role
 
 FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine

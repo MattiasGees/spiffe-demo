@@ -23,7 +23,7 @@ spec:
       serviceAccountName: spiffe-customer
       initContainers:
         - name: init-container
-          image:  mattiasgees/spiffe-demo-init:latest
+          image:  mattiasgees/spiffe-demo-init@sha256:1b35cc0c65113d55f8d22ad544c2e6c5547f17c7bd2a8687e1fb5f5e63142476
           imagePullPolicy: Always
           volumeMounts:
             - name: aws-config
@@ -38,11 +38,9 @@ spec:
             value: "demo"
           - name: SPIFFE_ENDPOINT_SOCKET
             value: "unix:///spiffe-workload-api/socket"
-          - name: SPIFFE_ID
-            value: "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-customer"
       containers:
         - name: spiffe-customer
-          image: mattiasgees/spiffe-demo@sha256:2ed1c6eac8cc2e1f327ba5ed9994d12df2d3a705ac8442e6a6f66563693ab2ac
+          image: mattiasgees/spiffe-demo@sha256:e455c5bedff6119f68dfa978bb2b9a73b75a284c511206aff6dbc521f1208fc2
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
