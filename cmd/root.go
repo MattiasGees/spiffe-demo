@@ -46,6 +46,6 @@ func Execute() {
 func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	rootCmd.PersistentFlags().StringVarP(&spiffeAuthz, "authorized-spiffe", "a", "", "The SPIFFE Identity that is authorized to talk to this service")
+	rootCmd.PersistentFlags().StringVarP(&spiffeAuthz, "authorized-spiffe", "a", "", "The SPIFFE Identity that is authorized to talk to/from this service")
 	rootCmd.PersistentFlags().StringVarP(&serverAddress, "server-address", "l", "127.0.0.1:8080", "How do we want to expose our server")
 }

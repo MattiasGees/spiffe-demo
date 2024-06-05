@@ -21,10 +21,12 @@ import (
 )
 
 var (
-	backendService string
-	s3Bucket       string
-	s3Filepath     string
-	awsRegion      string
+	backendService         string
+	HTTPBackendService     string
+	spiffeAuthzHTTPBackend string
+	s3Bucket               string
+	s3Filepath             string
+	awsRegion              string
 )
 
 // customerCmd represents the customer command
@@ -34,13 +36,15 @@ var customerCmd = &cobra.Command{
 	Long: `The customer service is the endpoints that serves requests to customers.
 	It connects to the backend service and relays the message back to the customer`,
 	Run: func(cmd *cobra.Command, args []string) {
-		customer.StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion)
+		customer.StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion, spiffeAuthzHTTPBackend, HTTPBackendService)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(customerCmd)
 	customerCmd.PersistentFlags().StringVarP(&backendService, "backend-service", "b", "https://localhost:8080", "Location on where to reach the backend service")
+	customerCmd.PersistentFlags().StringVarP(&HTTPBackendService, "httpbackend-service", "", "https://localhost:8080", "Location on where to reach the HTTP backend service")
+	customerCmd.PersistentFlags().StringVarP(&spiffeAuthzHTTPBackend, "authorized-spiffe-httpbackend", "", "https://localhost:8080", "Location on where to reach the HTTP backend service")
 	customerCmd.PersistentFlags().StringVarP(&s3Bucket, "s3-bucket", "", "", "Bucket name")
 	customerCmd.PersistentFlags().StringVarP(&s3Filepath, "s3-filepath", "", "testfile", "Path to the file of the S3 bucket")
 	customerCmd.PersistentFlags().StringVarP(&awsRegion, "aws-region", "", "eu-west2", "AWS Region where the S3 bucket can be found ")

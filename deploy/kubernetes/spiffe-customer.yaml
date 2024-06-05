@@ -40,7 +40,7 @@ spec:
             value: "unix:///spiffe-workload-api/socket"
       containers:
         - name: spiffe-customer
-          image: mattiasgees/spiffe-demo@sha256:e455c5bedff6119f68dfa978bb2b9a73b75a284c511206aff6dbc521f1208fc2
+          image: mattiasgees/spiffe-demo@sha256:1f721792aa0cb75c7f9d71c6528deb5f0cdcba87e2bf7b339624880bdf53e7bb
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
@@ -60,6 +60,10 @@ spec:
           - eu-west-2
           - --s3-bucket
           - mattias-spiffe-demo
+          - --authorized-spiffe-httpbackend
+          - "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-httpbackend"
+          - --httpbackend-service
+          - https://spiffe-httpbackend.spiffe-demo.svc.cluster.local
           env:
           - name: AWS_CONFIG_FILE
             value: "/tmp/aws/config"

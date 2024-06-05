@@ -16,6 +16,10 @@ import (
 
 func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the rootHandler from %s", r.RemoteAddr)
+	mTLSCall(w, r, c.spiffeAuthz, c.backendService)
+}
+
+func mTLSCall(w http.ResponseWriter, r *http.Request, spiffeAuthZ string, backendAddress string) {
 	w.Header().Set("Content-Type", "text/html")
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -31,7 +35,7 @@ func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	defer source.Close()
 
 	// Allowed SPIFFE ID
-	serverID := spiffeid.RequireFromString(c.spiffeAuthz)
+	serverID := spiffeid.RequireFromString(spiffeAuthZ)
 
 	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID `spiffe://example.org/server`
 	tlsConfig := tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeID(serverID))
@@ -41,9 +45,9 @@ func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	resp, err := client.Get(c.backendService)
+	resp, err := client.Get(backendAddress)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error connecting to %q: %v", c.backendService, err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error connecting to %q: %v", backendAddress, err), http.StatusInternalServerError)
 		return
 	}
 
