@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPIFFE action</title>
+    <style>
+        .response {
+            margin-top: 20px;
+        }
+        .response div {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Click a button to start an action</h1>
+    <button onclick="makeRequest('/mtls', 'response1')">SPIFFE Native mTLS</button>
+    <button onclick="makeRequest('/httpbackend', 'response2')">SPIFFE with Envoy and an HTTP backend</button>
+    <button onclick="makeRequest('/aws/put', 'response3')">Write a fule to S3 bucket</button>
+    <button onclick="makeRequest('/aws', 'response4')">Retrieve a file from S3 bucket</button>
+
+    <div class="response" id="response1"></div>
+    <div class="response" id="response2"></div>
+    <div class="response" id="response3"></div>
+    <div class="response" id="response4"></div>
+
+    <script>
+        function makeRequest(subpath, responseId) {
+            const url = window.location.origin + subpath;
+            fetch(url)
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById(responseId).innerHTML = data;
+                })
+                .catch(error => {
+                    document.getElementById(responseId).innerHTML = 'Error: ' + error;
+                });
+        }
+    </script>
+</body>
+</html>

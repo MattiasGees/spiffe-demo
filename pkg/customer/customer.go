@@ -34,7 +34,8 @@ func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepat
 }
 
 func (c *CustomerService) run() error {
-	http.HandleFunc("/", c.rootHandler)
+	http.HandleFunc("/", c.webpageHandler)
+	http.HandleFunc("/mtls", c.mtlsHandler)
 	http.HandleFunc("/spifferetriever", c.spiffeRetriever)
 	http.HandleFunc("/aws", c.awsRetrievalHandler)
 	http.HandleFunc("/aws/put", c.awsPutHandler)

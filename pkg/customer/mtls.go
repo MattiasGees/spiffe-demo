@@ -14,7 +14,7 @@ import (
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
 
-func (c *CustomerService) rootHandler(w http.ResponseWriter, r *http.Request) {
+func (c *CustomerService) mtlsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the rootHandler from %s", r.RemoteAddr)
 	mTLSCall(w, r, c.spiffeAuthz, c.backendService)
 }
