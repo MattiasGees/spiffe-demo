@@ -2,6 +2,7 @@
 
 IMAGE_NAME ?= mattiasgees/spiffe-demo:latest
 INIT_IMAGE_NAME ?= mattiasgees/spiffe-demo-init:latest
+POSTGRES_IMAGE_NAME ?= mattiasgees/spiffe-postgres:latest
 
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
@@ -16,8 +17,11 @@ build:
 	docker buildx build \
 		--output "type=docker,push=false" \
 		--tag $(INIT_IMAGE_NAME) \
-		--file deploy/initcontainer/Dockerfile \
-		.
+		./deploy/initcontainer
+	docker buildx build \
+		--output "type=docker,push=false" \
+		--tag $(POSTGRES_IMAGE_NAME) \
+		./deploy/postgresql
 
 .PHONY: publish # Push all the image to the remote registry
 publish:
@@ -32,5 +36,9 @@ publish:
 		--platform linux/amd64,linux/arm64 \
 		--output "type=image,push=true" \
 		--tag $(INIT_IMAGE_NAME) \
-		--file deploy/initcontainer/Dockerfile \
-		.
+		./deploy/initcontainer
+	docker buildx build \
+		--platform linux/amd64,linux/arm64 \
+		--output "type=image,push=true" \
+		--tag $(POSTGRES_IMAGE_NAME) \
+		./deploy/postgresql
