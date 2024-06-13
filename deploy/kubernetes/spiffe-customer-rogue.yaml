@@ -40,7 +40,7 @@ spec:
             value: "unix:///spiffe-workload-api/socket"
       containers:
         - name: spiffe-customer-rogue
-          image: mattiasgees/spiffe-demo@sha256:73b7e2596e37ef69fe9f1bfff8798a39486b42a3724d541e8599145aa24693c2
+          image: mattiasgees/spiffe-demo@sha256:56eb7d07eb288e24e2e501dd75aa590e1744170985dd618295f6201523f37184
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api

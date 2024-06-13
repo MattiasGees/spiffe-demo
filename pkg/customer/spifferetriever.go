@@ -24,6 +24,7 @@ type CertificateDetails struct {
 	PublicKeyAlgorithm string
 	Version            int
 	URIs               []string
+	DNSNames           []string
 	Extensions         []string
 }
 
@@ -76,6 +77,7 @@ const htmlTemplate = `
 							<tr><th>Public Key Algorithm</th><td>{{ $cert.PublicKeyAlgorithm }}</td></tr>
 							<tr><th>Version</th><td>{{ $cert.Version }}</td></tr>
 							<tr><th>URIs</th><td>{{ range $cert.URIs }}<div>{{ . }}</div>{{ end }}</td></tr>
+							<tr><th>DNS Names</th><td>{{ range $cert.DNSNames }}<div>{{ . }}</div>{{ end }}</td></tr>
 					</table>
 					<h3>Extensions</h3>
 					<ul class="extensions">
@@ -136,6 +138,7 @@ func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request
 				PublicKeyAlgorithm: cert.PublicKeyAlgorithm.String(),
 				Version:            cert.Version,
 				URIs:               extractURIs(cert),
+				DNSNames:           cert.DNSNames,
 				Extensions:         extractExtensions(cert.Extensions),
 			}
 
