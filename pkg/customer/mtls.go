@@ -16,10 +16,10 @@ import (
 
 func (c *CustomerService) mtlsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the rootHandler from %s", r.RemoteAddr)
-	mTLSCall(w, r, c.spiffeAuthz, c.backendService)
+	mTLSCall(w, c.spiffeAuthz, c.backendService)
 }
 
-func mTLSCall(w http.ResponseWriter, r *http.Request, spiffeAuthZ string, backendAddress string) {
+func mTLSCall(w http.ResponseWriter, spiffeAuthZ string, backendAddress string) {
 	w.Header().Set("Content-Type", "text/html")
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
