@@ -14,9 +14,10 @@ type CustomerService struct {
 	awsRegion              string
 	spiffeAuthzHTTPBackend string
 	HTTPBackendService     string
+	postgreSQLHost         string
 }
 
-func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion, spiffeAuthzHTTPBackend, HTTPBackendService string) {
+func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion, spiffeAuthzHTTPBackend, HTTPBackendService, postgreSQLHost string) {
 	customerService := CustomerService{
 		spiffeAuthz:            spiffeAuthz,
 		serverAddress:          serverAddress,
@@ -26,6 +27,7 @@ func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepat
 		awsRegion:              awsRegion,
 		spiffeAuthzHTTPBackend: spiffeAuthzHTTPBackend,
 		HTTPBackendService:     HTTPBackendService,
+		postgreSQLHost:         postgreSQLHost,
 	}
 
 	if err := customerService.run(); err != nil {
@@ -40,6 +42,8 @@ func (c *CustomerService) run() error {
 	http.HandleFunc("/aws", c.awsRetrievalHandler)
 	http.HandleFunc("/aws/put", c.awsPutHandler)
 	http.HandleFunc("/httpbackend", c.httpBackendHandler)
+	http.HandleFunc("/postgresql", c.postgreSQLRetrievalHandler)
+	http.HandleFunc("/postgresql/put", c.postgreSQLPutHandler)
 
 	log.Printf("Starting server at %s", c.serverAddress)
 

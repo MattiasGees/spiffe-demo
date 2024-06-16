@@ -40,7 +40,7 @@ spec:
             value: "unix:///spiffe-workload-api/socket"
       containers:
         - name: spiffe-customer
-          image: mattiasgees/spiffe-demo@sha256:56eb7d07eb288e24e2e501dd75aa590e1744170985dd618295f6201523f37184
+          image: mattiasgees/spiffe-demo@sha256:7307d60535d514ffeec7b82d8cc9e03f56f840b85998ce0d0344f8474902d4f2
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
@@ -64,6 +64,8 @@ spec:
           - "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-httpbackend"
           - --httpbackend-service
           - https://spiffe-httpbackend.spiffe-demo.svc.cluster.local
+          - --postgresql-host
+          - postgresql.spiffe-demo.svc.cluster.local
           env:
           - name: AWS_CONFIG_FILE
             value: "/tmp/aws/config"

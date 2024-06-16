@@ -20,13 +20,17 @@
     <h1>Click a button to start an action</h1>
     <button onclick="makeRequest('/mtls', 'response1')">SPIFFE Native mTLS</button>
     <button onclick="makeRequest('/httpbackend', 'response2')">SPIFFE with Envoy and an HTTP backend</button>
-    <button onclick="makeRequest('/aws/put', 'response3')">Write a fule to S3 bucket</button>
+    <button onclick="makeRequest('/aws/put', 'response3')">Write a file to S3 bucket</button>
     <button onclick="makeRequest('/aws', 'response4')">Retrieve a file from S3 bucket</button>
+    <button onclick="makeRequest('/postgresql/put', 'response5')">Write to PostgreSQL</button>
+    <button onclick="makeRequest('/postgresql', 'response6')">Retrieve from PostgreSQL</button>
 
     <div class="response" id="response1"></div>
     <div class="response" id="response2"></div>
     <div class="response" id="response3"></div>
     <div class="response" id="response4"></div>
+    <div class="response" id="response5"></div>
+    <div class="response" id="response6"></div>
 
     <script>
         function makeRequest(subpath, responseId) {

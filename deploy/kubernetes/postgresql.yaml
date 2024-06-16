@@ -23,7 +23,7 @@ spec:
       serviceAccountName: postgresql
       containers:
         - name: postgresql
-          image: mattiasgees/spiffe-postgres:latest
+          image: mattiasgees/spiffe-postgres@sha256:2cd0ca1ff3b9407eed079c612a8120fd32269e9c95711aebe34347182d6d536c
           imagePullPolicy: Always
           volumeMounts:
             - name: postgresql-certs
@@ -39,7 +39,7 @@ spec:
             name: postgresql
             protocol: TCP
         - name: spiffe-helper
-          image: mattiasgees/spire-tools:latest
+          image: mattiasgees/spire-tools@sha256:7850d1dfe93fc7c06c99b5c2c58dfb84bb7f6f98bf15310b3015fc76db95c983
           imagePullPolicy: Always
           securityContext:
             runAsUser: 999
