@@ -23,7 +23,7 @@ spec:
       serviceAccountName: postgresql
       containers:
         - name: postgresql
-          image: mattiasgees/spiffe-postgres@sha256:2cd0ca1ff3b9407eed079c612a8120fd32269e9c95711aebe34347182d6d536c
+          image: mattiasgees/spiffe-postgres@sha256:47c38a286bfeeb7a1b143df10ed8d9939297b97420a059c2c37dce41fa40eb6d
           imagePullPolicy: Always
           volumeMounts:
             - name: postgresql-certs

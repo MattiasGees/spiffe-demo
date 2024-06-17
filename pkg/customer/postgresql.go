@@ -37,22 +37,27 @@ func (c *CustomerService) postgreSQLRetrievalHandler(w http.ResponseWriter, r *h
 	db, err := c.setupPostgreSQLConnection()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	defer db.Close()
 
 	queryStmt := `SELECT name, text FROM test_table`
 	rows, err := db.Query(queryStmt)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error querying data: %v", err), http.StatusInternalServerError)
+		return
 	}
 	defer rows.Close()
 
 	// Iterate over the rows and print the results
 	for rows.Next() {
+		log.Print("In Rows Next")
 		var name string
 		var text string
 		err := rows.Scan(&name, &text)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error scanning row: %v", err), http.StatusInternalServerError)
+			return
 		}
 
 		fmt.Fprintf(w, "<p>Name: %s, Text: %s</p>", name, text)
@@ -62,6 +67,7 @@ func (c *CustomerService) postgreSQLRetrievalHandler(w http.ResponseWriter, r *h
 	err = rows.Err()
 	if err != nil {
 		log.Fatalf("Error iterating rows: %v", err)
+		return
 	}
 
 	fmt.Println("Data retrieved successfully!")
@@ -73,7 +79,9 @@ func (c *CustomerService) postgreSQLPutHandler(w http.ResponseWriter, r *http.Re
 	db, err := c.setupPostgreSQLConnection()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	defer db.Close()
 
 	randSource := rand.NewSource(time.Now().UnixNano())
 	randGen := rand.New(randSource)
@@ -89,6 +97,7 @@ func (c *CustomerService) postgreSQLPutHandler(w http.ResponseWriter, r *http.Re
 	_, err = db.Exec(insertStmt, fullName, text)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error inserting data: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/html")
@@ -127,7 +136,6 @@ func (c *CustomerService) setupPostgreSQLConnection() (*sql.DB, error) {
 	config.TLSConfig = tlsConfig
 
 	db := stdlib.OpenDB(*config)
-	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
