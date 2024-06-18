@@ -3,7 +3,7 @@
 IMAGE_NAME ?= mattiasgees/spiffe-demo:latest
 INIT_IMAGE_NAME ?= mattiasgees/spiffe-demo-init:latest
 POSTGRES_IMAGE_NAME ?= mattiasgees/spiffe-postgres:latest
-
+SPFFE_HELPER_IMAGE_NAME ?= mattiasgees/spiffe-helper:latest
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 .PHONY: build # Build the container image
@@ -22,6 +22,10 @@ build:
 		--output "type=docker,push=false" \
 		--tag $(POSTGRES_IMAGE_NAME) \
 		./deploy/postgresql
+	docker buildx build \
+		--output "type=docker,push=false" \
+		--tag $(SPFFE_HELPER_IMAGE_NAME) \
+		./deploy/spiffe-helper
 
 .PHONY: publish # Push all the image to the remote registry
 publish:
@@ -42,3 +46,8 @@ publish:
 		--output "type=image,push=true" \
 		--tag $(POSTGRES_IMAGE_NAME) \
 		./deploy/postgresql
+	docker buildx build \
+		--platform linux/amd64 \
+		--output "type=image,push=true" \
+		--tag $(SPFFE_HELPER_IMAGE_NAME) \
+		./deploy/spiffe-helper

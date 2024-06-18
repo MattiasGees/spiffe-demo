@@ -36,7 +36,7 @@ spec:
             mountPath: /run/spire/sockets
             readOnly: true
         - name: spiffe-httpbackend
-          image: mattiasgees/spiffe-demo@sha256:e67d8e53e2f32c2c9a87b7d59bf6ae500b2245de0f76c721c82c7c8f53787f30
+          image: mattiasgees/spiffe-demo@sha256:b97bbe617b746930a016cedcabfd5acff48649e826f2e1d5a5b53d2922d1980c
           imagePullPolicy: Always
           args:
           - httpservice

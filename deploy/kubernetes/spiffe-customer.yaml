@@ -40,7 +40,7 @@ spec:
             value: "unix:///spiffe-workload-api/socket"
       containers:
         - name: spiffe-customer
-          image: mattiasgees/spiffe-demo@sha256:e67d8e53e2f32c2c9a87b7d59bf6ae500b2245de0f76c721c82c7c8f53787f30
+          image: mattiasgees/spiffe-demo@sha256:b97bbe617b746930a016cedcabfd5acff48649e826f2e1d5a5b53d2922d1980c
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
@@ -77,18 +77,6 @@ spec:
           - containerPort: 8080
             name: http
             protocol: TCP
-        # - name: spire-tools
-        #   image: mattiasgees/spire-tools:latest
-        #   imagePullPolicy: Always
-        #   env:
-        #   - name: AWS_CONFIG_FILE
-        #     value: "/tmp/aws/config"
-        #   volumeMounts:
-        #     - name: spiffe-workload-api
-        #       mountPath: /spiffe-workload-api
-        #       readOnly: true
-        #     - name: aws-config
-        #       mountPath: /tmp/aws
       volumes:
       - csi:
           driver: csi.spiffe.io
