@@ -49,9 +49,6 @@ spec:
               mountPath: /opt/postgresql-certs
             - name: spiffe-helper
               mountPath: /etc/spiffe-helper
-          env:
-          - name: POSTGRES_PASSWORD
-            value: "test"
           args: ["-config", "/etc/spiffe-helper/helper.conf"]
       volumes:
       - csi:
