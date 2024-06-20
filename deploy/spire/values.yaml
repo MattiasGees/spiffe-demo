@@ -1,0 +1,57 @@
+global:
+  spire:
+    clusterName: playground
+    trustDomain: spire.internal.mattiasgees.be
+    jwtIssuer: https://oidc-discovery.mattias-gcp.jetstacker.net
+    recommendations:
+      enabled: false
+    namespaces:
+      create: false
+    strictMode: true
+
+spire-server:
+  ca_subject:
+    country: UK
+    organization: Demo
+    common_name: spire.internal.mattiasgees.be
+  controllerManager:
+    enabled: true
+    identities:
+      clusterSPIFFEIDs:
+        default:
+          autoPopulateDNSNames: true
+
+spiffe-oidc-discovery-provider:
+  tls:
+    spire:
+      enabled: false
+  enabled: true
+  insecureScheme:
+    enabled: true
+  agentSocketName: socket
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+    - host: oidc-discovery.mattias-gcp.jetstacker.net
+      paths:
+        - path: /
+          pathType: Prefix
+    tls:
+    - secretName: oidc-backend-tls
+      hosts:
+        - oidc-discovery.${domain}
+
+spire-agent:
+  # This socket path is a requirement for Istio https://istio.io/latest/docs/ops/integrations/spire/
+  socketPath: "/run/secrets/workload-spiffe-uds/socket"
+  workloadAttestors:
+    k8s:
+      skipKubeletVerification: false
+      disableContainerSelectors: false
+
+# This socket path is a requirement for Istio https://istio.io/latest/docs/ops/integrations/spire/
+spiffe-csi-driver:
+  agentSocketPath: "/run/secrets/workload-spiffe-uds/socket"

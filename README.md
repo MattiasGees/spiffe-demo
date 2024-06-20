@@ -36,3 +36,14 @@ The different manifests to deploy to Kubernetes. Currently this is opinionated t
 ### Dockerfiles
 
 We need to package our Golang tool so it can be deployed in our Kubernetes cluster. For the customer application we also require an init-container that sets the AWS config correctly.
+
+## Setup
+
+### SPIRE
+
+Install SPIRE by changing the values (the domain and trust domains) in `./deploy/spire/values.yaml` and installing it with Helm
+
+```bash
+helm upgrade --install -n spire spire-crds spire-crds --repo https://spiffe.github.io/helm-charts-hardened/ --create-namespace
+helm upgrade --install -n spire spire spire -f ./deploy/spire/values.yaml --repo https://spiffe.github.io/helm-charts-hardened/
+```
