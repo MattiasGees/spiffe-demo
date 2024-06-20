@@ -28,9 +28,6 @@ spec:
           volumeMounts:
             - name: aws-config
               mountPath: /tmp/aws
-            - name: spiffe-workload-api
-              mountPath: /spiffe-workload-api
-              readOnly: true
           env:
           - name: AWS_ROLE_ARN
             value: "arn:aws:iam::228615251467:role/demo-spiffe-role"
