@@ -29,11 +29,13 @@ import (
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
 
+// Handles requests for connecting to the SPIFFE native backend
 func (c *CustomerService) mtlsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the rootHandler from %s", r.RemoteAddr)
 	mTLSCall(w, c.spiffeAuthz, c.backendService)
 }
 
+// General mTLS call to SPIFFE enabled servers. This can be either a SPIFFE native application or a webserver/apiserver that is fronted by a SPIFFE proxy like Envoy.
 func mTLSCall(w http.ResponseWriter, spiffeAuthZ string, backendAddress string) {
 	w.Header().Set("Content-Type", "text/html")
 	ctx := context.Background()
@@ -52,7 +54,7 @@ func mTLSCall(w http.ResponseWriter, spiffeAuthZ string, backendAddress string) 
 	// Allowed SPIFFE ID
 	serverID := spiffeid.RequireFromString(spiffeAuthZ)
 
-	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID `spiffe://example.org/server`
+	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID.
 	tlsConfig := tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeID(serverID))
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -60,6 +62,7 @@ func mTLSCall(w http.ResponseWriter, spiffeAuthZ string, backendAddress string) 
 		},
 	}
 
+	// Do a GET call to the backend and get the response.
 	resp, err := client.Get(backendAddress)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error connecting to %q: %v", backendAddress, err), http.StatusInternalServerError)
@@ -67,18 +70,21 @@ func mTLSCall(w http.ResponseWriter, spiffeAuthZ string, backendAddress string) 
 	}
 
 	defer resp.Body.Close()
+	// Read the body from the response.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to read body: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	// Retrieve the server SPIFFE ID from the connection.
 	serverSPIFFEID, err := spiffetls.PeerIDFromConnectionState(*resp.TLS)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Wasn't able to determine the SPIFFE ID of the server: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	// Showcase the retrieved information and send it back to the customer.
 	fmt.Fprintf(w, "<p>Got a response from: %s</p>", serverSPIFFEID.String())
 	fmt.Fprintf(w, "<p>Server says: %q</p>", body)
 }

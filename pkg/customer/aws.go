@@ -28,8 +28,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
+// Retrieves a file from S3 and shows that file to the customer
 func (c *CustomerService) awsRetrievalHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the AWS Retrieval Handler from %s", r.RemoteAddr)
+
+	// Setup a session to AWS.
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(c.awsRegion),
 	})
@@ -38,7 +41,9 @@ func (c *CustomerService) awsRetrievalHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// Create a new S3 instance.
 	svc := s3.New(sess)
+	// Retrieve a file from S3
 	resp, err := svc.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(c.s3Bucket),
 		Key:    aws.String(c.s3Filepath),
@@ -49,12 +54,14 @@ func (c *CustomerService) awsRetrievalHandler(w http.ResponseWriter, r *http.Req
 	}
 	defer resp.Body.Close()
 
+	// Read the content of the retrieved file from S3
 	content, err := io.ReadAll(resp.Body)
 	if err != nil {
 		http.Error(w, "Failed to read object content", http.StatusInternalServerError)
 		return
 	}
 
+	// Showcase the content of the retrieved file to the customer
 	tmpl := template.Must(template.New("display").Parse(`
 		<html>
 		<head><title>S3 File Content</title></head>
@@ -72,9 +79,12 @@ func (c *CustomerService) awsRetrievalHandler(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// Writes a file to S3 and shows the success to the customer
 func (c *CustomerService) awsPutHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the AWS Put Handler from %s", r.RemoteAddr)
 	verbose := true
+
+	// Setup a session to AWS.
 	sess, err := session.NewSession(&aws.Config{
 		Region:                        aws.String(c.awsRegion),
 		CredentialsChainVerboseErrors: &verbose,
@@ -84,9 +94,11 @@ func (c *CustomerService) awsPutHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Create a new S3 instance.
 	svc := s3.New(sess)
 	reader := bytes.NewReader([]byte("This is a test to write to an S3 bucket"))
 
+	// Write a file to S3
 	result, err := svc.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(c.s3Bucket),
 		Key:    aws.String(c.s3Filepath),
@@ -97,6 +109,7 @@ func (c *CustomerService) awsPutHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Tell the customer we have uploaded a file to S3 and add some information to where on S3 we have uploaded it.
 	fmt.Fprintf(w, "Successfully uploaded %q to %q\n", c.s3Filepath, c.s3Bucket)
 	fmt.Fprintf(w, "The uploaded content is: %s", result)
 }

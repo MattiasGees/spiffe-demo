@@ -34,6 +34,7 @@ type BackendService struct {
 	serverAddress string
 }
 
+// Main function that creates the backend server and starts it. This is called from the CLI.
 func StartServer(spiffeAuthz, serverAddress string) {
 	backendService := BackendService{
 		spiffeAuthz:   spiffeAuthz,
@@ -45,6 +46,7 @@ func StartServer(spiffeAuthz, serverAddress string) {
 	}
 }
 
+// This gets called from the main function and actually starts an mTLS server that is SPIFFE capable.
 func (b *BackendService) run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -71,12 +73,14 @@ func (b *BackendService) run(ctx context.Context) error {
 		ReadHeaderTimeout: time.Second * 10,
 	}
 
+	// Serve the SPIFFE mTLS server.
 	if err := server.ListenAndServeTLS("", ""); err != nil {
 		return fmt.Errorf("failed to serve: %w", err)
 	}
 	return nil
 }
 
+// function that handles calls to `/`. This will just respond with a simple message and the date and time.
 func (b *BackendService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request received from %s", r.RemoteAddr)
 	currentTime := time.Now()

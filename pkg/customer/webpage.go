@@ -24,6 +24,7 @@ import (
 //go:embed index.html
 var content embed.FS
 
+// Main webpage of the customer service. This is the starting point where all the demos can be executed from within the browser.
 func (c *CustomerService) webpageHandler(w http.ResponseWriter, r *http.Request) {
 	data, err := fs.ReadFile(content, "index.html")
 	if err != nil {

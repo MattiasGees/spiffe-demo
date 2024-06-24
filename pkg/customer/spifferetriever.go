@@ -120,12 +120,15 @@ const htmlTemplate = `
 </html>
 `
 
+// Based upon https://github.com/spiffe/go-spiffe/tree/main/v2/examples/spiffe-watcher but instead of watching for changes it fetches them upon a web request.
 func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the SPIFFE Retriever from %s", r.RemoteAddr)
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
+	// Create a `workloadapi.New`, it will connect to Workload API using provided socket path.
+	// If socket path is not defined using `workloadapi.New`, value from environment variable `SPIFFE_ENDPOINT_SOCKET` is used.
 	client, err := workloadapi.New(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to create workload API client: %v", err), http.StatusInternalServerError)
@@ -133,12 +136,14 @@ func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request
 	}
 	defer client.Close()
 
+	// Fetch its own X.509 SVID from the Workload API.
 	x509SVIDs, err := client.FetchX509SVIDs(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to fetch X.509 SVIDs: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	// Structure the retrieved data so it can be showcases later in the HTML page.
 	var certificates []CertificateDetails
 	for _, x509SVID := range x509SVIDs {
 
@@ -161,12 +166,14 @@ func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request
 		}
 	}
 
+	// Fetch the JWT bundles from the Workload API.
 	JWTBundles, err := client.FetchJWTBundles(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to fetch JWT Bundles: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	// Structure the retrieved data so it can be showcases later in the HTML page.
 	var bundles []JWTBundle
 	for _, jwtbundle := range JWTBundles.Bundles() {
 		var bundle JWTBundle
@@ -183,6 +190,7 @@ func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request
 		bundles = append(bundles, bundle)
 	}
 
+	// Parse the HTML template.
 	tmpl, err := template.New("cert").Parse(htmlTemplate)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating template: %v", err), http.StatusInternalServerError)
@@ -194,6 +202,7 @@ func (c *CustomerService) spiffeRetriever(w http.ResponseWriter, r *http.Request
 		Bundles:      bundles,
 	}
 
+	// Inject the data retrieved from the Workload API into the template and send it back to the requestor.
 	err = tmpl.Execute(w, pageData)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error executing template: %v", err), http.StatusInternalServerError)

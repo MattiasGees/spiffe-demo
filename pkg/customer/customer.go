@@ -32,6 +32,7 @@ type CustomerService struct {
 	postgreSQLHost         string
 }
 
+// Main function that creates the customer server and starts it. This is called from the CLI.
 func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion, spiffeAuthzHTTPBackend, HTTPBackendService, postgreSQLHost string) {
 	customerService := CustomerService{
 		spiffeAuthz:            spiffeAuthz,
@@ -50,7 +51,9 @@ func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepat
 	}
 }
 
+// This gets called from the main function and actually starts that customer HTTP server.
 func (c *CustomerService) run() error {
+	// Set up a all of the resource handlers.
 	http.HandleFunc("/", c.webpageHandler)
 	http.HandleFunc("/mtls", c.mtlsHandler)
 	http.HandleFunc("/spifferetriever", c.spiffeRetriever)
@@ -62,6 +65,7 @@ func (c *CustomerService) run() error {
 
 	log.Printf("Starting server at %s", c.serverAddress)
 
+	// Serve the HTTP server.
 	if err := http.ListenAndServe(c.serverAddress, nil); err != nil {
 		return err
 	}

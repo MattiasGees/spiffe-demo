@@ -27,6 +27,7 @@ type HTTPService struct {
 	serverAddress string
 }
 
+// Main function that creates the httpbackend server and starts it. This is called from the CLI.
 func StartServer(serverAddress string) {
 	HTTPService := HTTPService{
 		serverAddress: serverAddress,
@@ -37,11 +38,14 @@ func StartServer(serverAddress string) {
 	}
 }
 
+// This gets called from the main function and actually starts an HTTP server.
 func (h *HTTPService) run() error {
+	// Set up a `/` resource handler
 	http.HandleFunc("/", h.rootHandler)
 
 	log.Printf("Starting server at %s", h.serverAddress)
 
+	// Serve the HTTP server
 	if err := http.ListenAndServe(h.serverAddress, nil); err != nil {
 		return err
 	}
@@ -49,6 +53,7 @@ func (h *HTTPService) run() error {
 	return nil
 }
 
+// function that handles calls to `/`. This will just respond with a simple message and the date and time.
 func (h *HTTPService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request received from %s", r.RemoteAddr)
 	currentTime := time.Now()
