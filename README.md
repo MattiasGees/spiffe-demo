@@ -110,3 +110,7 @@ Take a look `deploy/chart/spiffe-demo/values.yaml` to verify it matches your env
 ```bash
 helm upgrade --install -n spiffe-demo2 spife-demo ./deploy/chart/spiffe-demo --create-namespace
 ```
+
+## Contributing
+
+Contributions of new use-cases or improvements are more than welcome!
