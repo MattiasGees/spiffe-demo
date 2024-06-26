@@ -83,4 +83,8 @@ terraform apply
 
 ### Kubernetes
 
-TODO
+Change the variables in `deploy/chart/spiffe-demo/values.yaml` to match your environment and after that do a Helm install.
+
+```bash
+helm upgrade --install -n spiffe-demo2 spife-demo ./deploy/chart/spiffe-demo --create-namespace
+```

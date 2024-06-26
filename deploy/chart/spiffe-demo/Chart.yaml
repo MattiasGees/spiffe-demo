@@ -1,0 +1,15 @@
+apiVersion: v2
+name: spiffe-demo
+description: >
+  A Helm chart for deploying the SPIFFE demo
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
+keywords: ["spire-demo"]
+home: https://github.com/
+sources:
+  - https://github.com/MattiasGees/spiffe-demo
+icon: https://spiffe.io/img/logos/spire/icon/color/spire-icon-color.png
+maintainers:
+  - name: mattiasgees
+    email: mattias.gees@venafi.com

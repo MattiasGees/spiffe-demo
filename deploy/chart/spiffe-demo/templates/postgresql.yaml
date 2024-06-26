@@ -1,14 +1,12 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: postgresql
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-postgresql
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgresql
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-postgresql
   labels:
     app: postgresql
 spec:
@@ -20,10 +18,10 @@ spec:
       labels:
         app: postgresql
     spec:
-      serviceAccountName: postgresql
+      serviceAccountName: {{ include "spiffeDemo.name" . }}-postgresql
       containers:
         - name: postgresql
-          image: mattiasgees/spiffe-postgres@sha256:049838d41af32bd795836ea1060819153e74cd054150ec5f13353acae377cb94
+          image:  "{{- .Values.postgresql.imageName -}}:{{- .Values.postgresql.imageTag -}}"
           imagePullPolicy: Always
           volumeMounts:
             - name: postgresql-certs
@@ -32,14 +30,17 @@ spec:
               mountPath: /etc/postgresql
           args: ["-c", "config_file=/etc/postgresql/postgresql.conf"]
           env:
+          # Don't do this in production
           - name: POSTGRES_PASSWORD
-            value: "test"
+            value: "wearenotusingthissoIdontworryaboutit"
+          - name: SPIFFE_USER
+            value: {{ include "spiffeDemo.name" . }}-customer
           ports:
           - containerPort: 5432
             name: postgresql
             protocol: TCP
         - name: spiffe-helper
-          image: mattiasgees/spiffe-helper@sha256:12120ab350d2710dfc74e1344d09c2665545eba291e156bc8f0ea01dc9a11f74
+          image: "{{- .Values.spiffeHelper.imageName -}}:{{- .Values.spiffeHelper.imageTag -}}"
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
@@ -60,16 +61,15 @@ spec:
           medium: Memory
       - name: spiffe-helper
         configMap:
-          name: spiffe-helper
+          name: {{ include "spiffeDemo.name" . }}-spiffe-helper
       - name: postgres-config
         configMap:
-          name: postgres-config
+          name: {{ include "spiffeDemo.name" . }}-postgres-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgresql
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-postgresql
 spec:
   selector:
     app: postgresql
@@ -81,8 +81,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: spiffe-helper
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-spiffe-helper
 data:
   helper.conf: |
     # This configuration file reloads postgresql certificates using
@@ -106,7 +105,7 @@ data:
     #
 
     # SPIRE agent unix socket path
-    agent_address = "/spiffe-workload-api/socket"
+    agent_address = "{{- .Values.spiffe.socketPath -}}"
 
     # psql binary path
     cmd = "/usr/bin/psql"
@@ -128,8 +127,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: postgres-config
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-postgres-config
 data:
   postgresql.conf: |
     # -----------------------------

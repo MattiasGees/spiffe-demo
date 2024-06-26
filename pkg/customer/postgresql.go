@@ -31,7 +31,6 @@ import (
 )
 
 const (
-	dbUser = "spiffe-customer"
 	dbName = "testdb"
 	dbPort = "5432"
 )
@@ -103,7 +102,7 @@ func (c *CustomerService) postgreSQLPutHandler(w http.ResponseWriter, r *http.Re
 	defer db.Close()
 
 	// Randomly generate some data to insert to PostgreSQL.
-	// Generate a randome name
+	// Generate a random name
 	randSource := rand.NewSource(time.Now().UnixNano())
 	randGen := rand.New(randSource)
 	firstName := firstNames[randGen.Intn(len(firstNames))]
@@ -147,7 +146,7 @@ func (c *CustomerService) setupPostgreSQLConnection() (*sql.DB, error) {
 
 	connStr := fmt.Sprintf(
 		"postgres://%s@%s:%s/%s?sslmode=require",
-		dbUser, c.postgreSQLHost, dbPort, dbName)
+		c.postgreSQLUser, c.postgreSQLHost, dbPort, dbName)
 
 	// Parse the PostgreSQL config settings
 	config, err := pgx.ParseConfig(connStr)

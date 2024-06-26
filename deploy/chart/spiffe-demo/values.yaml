@@ -1,0 +1,34 @@
+postgresql:
+  imageName: mattiasgees/spiffe-postgres
+  imageTag: latest
+
+spiffe:
+  socketPath: /spiffe-workload-api/socket
+  trustdomain: spire.internal.mattiasgees.be
+
+spiffeHelper:
+  imageName:  mattiasgees/spiffe-helper
+  imageTag: latest
+
+spiffeApp:
+  imageName: mattiasgees/spiffe-demo
+  imageTag: latest
+
+initContainer:
+  imageName: mattiasgees/spiffe-demo-init
+  imageTag: latest
+  awsRoleArn: arn:aws:iam::228615251467:role/demo-spiffe-role
+  JWTAudience: demo
+
+spiffeCustomer:
+  awsRegion: eu-west-2
+  s3Bucket: mattias-spiffe-demo
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/auth-signin: https://login.mattias-gcp.jetstacker.net/oauth2/start?rd=https://$host$request_uri$is_args$args
+    nginx.ingress.kubernetes.io/auth-url: http://oauth2-proxy.authentication.svc.cluster.local/oauth2/auth
+  hostname: spiffe-demo-new.mattias-gcp.jetstacker.net
+
+spiffeCustomerRogue:
+  hostname: spiffe-demo-new-rogue.mattias-gcp.jetstacker.net

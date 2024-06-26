@@ -1,14 +1,12 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: spiffe-httpbackend
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-httpbackend
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spiffe-httpbackend
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-httpbackend
   labels:
     app: spiffe-httpbackend
 spec:
@@ -20,7 +18,7 @@ spec:
       labels:
         app: spiffe-httpbackend
     spec:
-      serviceAccountName: spiffe-httpbackend
+      serviceAccountName: {{ include "spiffeDemo.name" . }}-httpbackend
       containers:
         - name: envoy
           image: envoyproxy/envoy:v1.25.1
@@ -33,10 +31,10 @@ spec:
             mountPath: "/run/envoy"
             readOnly: true
           - name: spiffe-workload-api
-            mountPath: /run/spire/sockets
+            mountPath: /spiffe-workload-api
             readOnly: true
         - name: spiffe-httpbackend
-          image: mattiasgees/spiffe-demo@sha256:b97bbe617b746930a016cedcabfd5acff48649e826f2e1d5a5b53d2922d1980c
+          image: "{{- .Values.spiffeApp.imageName -}}:{{- .Values.spiffeApp.imageTag -}}"
           imagePullPolicy: Always
           args:
           - httpservice
@@ -51,13 +49,12 @@ spec:
         name: spiffe-workload-api
       - name: envoy-config
         configMap:
-          name: backend-envoy
+          name: {{ include "spiffeDemo.name" . }}-backend-envoy
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: spiffe-httpbackend
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-httpbackend
 spec:
   selector:
     app: spiffe-httpbackend
@@ -69,8 +66,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: backend-envoy
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-backend-envoy
 data:
   envoy.yaml: |
     node:
@@ -120,7 +116,7 @@ data:
               "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
               common_tls_context:
                 tls_certificate_sds_secret_configs:
-                - name: "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-httpbackend"
+                - name: "spiffe://{{- .Values.spiffe.trustdomain -}}/ns/{{- .Release.Namespace -}}/sa/{{- include "spiffeDemo.name" . -}}-httpbackend"
                   sds_config:
                     resource_api_version: V3
                     api_config_source:
@@ -135,10 +131,10 @@ data:
                     match_typed_subject_alt_names:
                     - san_type: URI
                       matcher:
-                        exact: "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-customer"
+                        exact: "spiffe://{{- .Values.spiffe.trustdomain -}}/ns/{{- .Release.Namespace -}}/sa/{{- include "spiffeDemo.name" . -}}-customer"
                   # obtain the trust bundle from SDS
                   validation_context_sds_secret_config:
-                    name: "spiffe://spire.internal.mattiasgees.be"
+                    name: "spiffe://{{- .Values.spiffe.trustdomain -}}"
                     sds_config:
                       resource_api_version: V3
                       api_config_source:
@@ -161,7 +157,7 @@ data:
             - endpoint:	
                 address:	
                   pipe:	
-                    path: /run/spire/sockets/socket
+                    path: {{ .Values.spiffe.socketPath }}
       - name: local_service
         connect_timeout: 1s
         type: strict_dns

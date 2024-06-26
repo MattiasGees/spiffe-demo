@@ -30,10 +30,11 @@ type CustomerService struct {
 	spiffeAuthzHTTPBackend string
 	HTTPBackendService     string
 	postgreSQLHost         string
+	postgreSQLUser         string
 }
 
 // Main function that creates the customer server and starts it. This is called from the CLI.
-func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion, spiffeAuthzHTTPBackend, HTTPBackendService, postgreSQLHost string) {
+func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion, spiffeAuthzHTTPBackend, HTTPBackendService, postgreSQLHost, postgreSQLUser string) {
 	customerService := CustomerService{
 		spiffeAuthz:            spiffeAuthz,
 		serverAddress:          serverAddress,
@@ -44,6 +45,7 @@ func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepat
 		spiffeAuthzHTTPBackend: spiffeAuthzHTTPBackend,
 		HTTPBackendService:     HTTPBackendService,
 		postgreSQLHost:         postgreSQLHost,
+		postgreSQLUser:         postgreSQLUser,
 	}
 
 	if err := customerService.run(); err != nil {

@@ -24,7 +24,8 @@ go.work
 certs
 
 # Compiled binary
-spiffe-demo
+/spiffe-demo
+!spiffe-demo/
 
 # Terraform
 .terraform

@@ -28,6 +28,7 @@ var (
 	s3Filepath             string
 	awsRegion              string
 	postgreSQLHost         string
+	postgreSQLUser         string
 )
 
 // customerCmd represents the customer command
@@ -37,7 +38,7 @@ var customerCmd = &cobra.Command{
 	Long: `The customer service is the endpoints that serves requests to customers.
 	It connects to the backend service and relays the message back to the customer`,
 	Run: func(cmd *cobra.Command, args []string) {
-		customer.StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion, spiffeAuthzHTTPBackend, HTTPBackendService, postgreSQLHost)
+		customer.StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion, spiffeAuthzHTTPBackend, HTTPBackendService, postgreSQLHost, postgreSQLUser)
 	},
 }
 
@@ -50,5 +51,6 @@ func init() {
 	customerCmd.PersistentFlags().StringVarP(&s3Filepath, "s3-filepath", "", "testfile", "Path to the file of the S3 bucket")
 	customerCmd.PersistentFlags().StringVarP(&awsRegion, "aws-region", "", "eu-west2", "AWS Region where the S3 bucket can be found")
 	customerCmd.PersistentFlags().StringVarP(&postgreSQLHost, "postgresql-host", "", "", "Hostname of postgreSQL")
+	customerCmd.PersistentFlags().StringVarP(&postgreSQLUser, "postgresql-user", "", "", "User to connect to postgreSQL")
 
 }

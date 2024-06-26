@@ -1,14 +1,12 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: spiffe-customer-rogue
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-customer-rogue
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spiffe-customer-rogue
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-customer-rogue
   labels:
     app: spiffe-customer-rogue
 spec:
@@ -20,10 +18,10 @@ spec:
       labels:
         app: spiffe-customer-rogue
     spec:
-      serviceAccountName: spiffe-customer-rogue
+      serviceAccountName: {{ include "spiffeDemo.name" . }}-customer-rogue
       initContainers:
         - name: init-container
-          image:  mattiasgees/spiffe-demo-init@sha256:1b35cc0c65113d55f8d22ad544c2e6c5547f17c7bd2a8687e1fb5f5e63142476
+          image:  "{{- .Values.initContainer.imageName -}}:{{- .Values.initContainer.imageTag -}}"
           imagePullPolicy: Always
           volumeMounts:
             - name: aws-config
@@ -33,14 +31,14 @@ spec:
               readOnly: true
           env:
           - name: AWS_ROLE_ARN
-            value: "arn:aws:iam::228615251467:role/demo-spiffe-role"
+            value: "{{- .Values.initContainer.awsRoleArn -}}"
           - name: JWT_AUDIENCE
-            value: "demo"
+            value: "{{- .Values.initContainer.JWTAudience -}}"
           - name: SPIFFE_ENDPOINT_SOCKET
-            value: "unix:///spiffe-workload-api/socket"
+            value: "unix://{{- .Values.spiffe.socketPath -}}"
       containers:
         - name: spiffe-customer-rogue
-          image: mattiasgees/spiffe-demo@sha256:b97bbe617b746930a016cedcabfd5acff48649e826f2e1d5a5b53d2922d1980c
+          image: "{{- .Values.spiffeApp.imageName -}}:{{- .Values.spiffeApp.imageTag -}}"
           imagePullPolicy: Always
           volumeMounts:
             - name: spiffe-workload-api
@@ -51,26 +49,30 @@ spec:
           args:
           - customer
           - --authorized-spiffe
-          - "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-backend"
+          - "spiffe://{{- .Values.spiffe.trustdomain -}}/ns/{{- .Release.Namespace -}}/sa/{{- include "spiffeDemo.name" . -}}-backend"
           - --server-address
           - 0.0.0.0:8080
           - --backend-service
-          - https://spiffe-backend.spiffe-demo.svc.cluster.local
+          - https://{{ include "spiffeDemo.name" . }}-backend.{{ .Release.Namespace -}}.svc.cluster.local
           - --aws-region
-          - eu-west-2
+          - "{{- .Values.spiffeCustomer.awsRegion -}}"
           - --s3-bucket
-          - mattias-spiffe-demo
+          - "{{- .Values.spiffeCustomer.s3Bucket -}}"
           - --authorized-spiffe-httpbackend
-          - "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-httpbackend"
+          - "spiffe://{{- .Values.spiffe.trustdomain -}}/ns/{{- .Release.Namespace -}}/sa/{{- include "spiffeDemo.name" . -}}-httpbackend"
           - --httpbackend-service
-          - https://spiffe-httpbackend.spiffe-demo.svc.cluster.local
+          - https://{{ include "spiffeDemo.name" . }}-httpbackend.{{ .Release.Namespace -}}.svc.cluster.local
+          - --postgresql-host
+          - {{ include "spiffeDemo.name" . }}-postgresql.{{ .Release.Namespace -}}.svc.cluster.local
+          - --postgresql-user
+          - {{ include "spiffeDemo.name" . }}-customer
           env:
           - name: AWS_CONFIG_FILE
             value: "/tmp/aws/config"
           - name: AWS_SDK_LOAD_CONFIG
             value: "1"
           - name: SPIFFE_ENDPOINT_SOCKET
-            value: "unix:///spiffe-workload-api/socket"
+            value: "unix://{{- .Values.spiffe.socketPath -}}"
           ports:
           - containerPort: 8080
             name: http
@@ -87,8 +89,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: spiffe-customer-rogue
-  namespace: spiffe-demo
+  name: {{ include "spiffeDemo.name" . }}-customer-rogue
 spec:
   selector:
     app: spiffe-customer-rogue
@@ -101,25 +102,23 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/auth-signin: https://login.mattias-gcp.jetstacker.net/oauth2/start?rd=https://$host$request_uri$is_args$args
-    nginx.ingress.kubernetes.io/auth-url: http://oauth2-proxy.authentication.svc.cluster.local/oauth2/auth
-  name: spiffe-customer-rogue
-  namespace: spiffe-demo
+    {{- with .Values.spiffeCustomer.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "spiffeDemo.name" . }}-customer-rogue
 spec:
   rules:
-  - host: spiffe-demo-rogue.mattias-gcp.jetstacker.net
+  - host: {{ .Values.spiffeCustomerRogue.hostname }}
     http:
       paths:
       - backend:
           service:
-            name: spiffe-customer-rogue
+            name: {{ include "spiffeDemo.name" . }}-customer-rogue
             port:
               number: 80
         path: /
         pathType: Prefix
   tls:
   - hosts:
-    - spiffe-demo-rogue.mattias-gcp.jetstacker.net
-    secretName: spiffe-demo-rogue
+    - {{ .Values.spiffeCustomerRogue.hostname }}
+    secretName: {{ include "spiffeDemo.name" . }}-demo-rogue

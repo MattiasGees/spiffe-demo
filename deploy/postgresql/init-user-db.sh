@@ -5,8 +5,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 	-- Create test database
   CREATE DATABASE testdb;
 
-  -- Create client user
-  CREATE USER "spiffe-customer" WITH ENCRYPTED PASSWORD '1234';
+  -- Create user for customer application
+  CREATE USER "$SPIFFE_USER" WITH ENCRYPTED PASSWORD '1234';
 
   -- Connect to the newly created database
   \c testdb;
@@ -17,6 +17,6 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
       text VARCHAR(255)
   );
 
-  -- Grant privileges to spiffe-customer
-  GRANT SELECT, INSERT, UPDATE, DELETE ON test_table TO "spiffe-customer";
+  -- Grant privileges to customer application
+  GRANT SELECT, INSERT, UPDATE, DELETE ON test_table TO "$SPIFFE_USER";
 EOSQL
