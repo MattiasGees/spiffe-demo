@@ -73,13 +73,13 @@ To be able to run this demo, there are a few prerequisites
 Some values are going to be specific to your environment. We are going to prepare these now:
 
 ```bash
-export OIDC_HOSTNAME= oidc.yourdomain.com
-export BUCKET_NAME= myrandombucketname
-export DEMO_HOSTNAME= demo.yourdomain.com
-export DEMO_ROGUE_HOSTNAME= demo-rogue.yourdomain.com
-sed -i "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g" deploy/spire/values.yaml
-sed -i "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/BUCKET_NAME/$BUCKET_NAME/g" deploy/terraform/variables.tf
-sed -i "s/BUCKET_NAME/$BUCKET_NAME/g; s/DEMO_HOSTNAME/$DEMO_HOSTNAME/g; s/DEMO_ROGUE_HOSTNAME/$DEMO_ROGUE_HOSTNAME/g" deploy/charts/spiffe-demo/values.yaml
+export OIDC_HOSTNAME=oidc.yourdomain.com
+export BUCKET_NAME=myrandombucketname
+export DEMO_HOSTNAME=demo.yourdomain.com
+export DEMO_ROGUE_HOSTNAME=demo-rogue.yourdomain.com
+sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g" deploy/spire/values.yaml
+sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/BUCKET_NAME/$BUCKET_NAME/g" deploy/terraform/variables.tf
+sed -i '' "s/BUCKET_NAME/$BUCKET_NAME/g; s/DEMO_HOSTNAME/$DEMO_HOSTNAME/g; s/DEMO_ROGUE_HOSTNAME/$DEMO_ROGUE_HOSTNAME/g" deploy/chart/spiffe-demo/values.yaml
 ```
 
 ### SPIRE
