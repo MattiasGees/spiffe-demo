@@ -1,13 +1,13 @@
 variable "bucket-name" {
-  default = "mattias-spiffe-demo"
+  default = "BUCKET_NAME"
 }
 
 variable "oidc-url" {
-  default = "https://oidc-discovery.mattias-gcp.jetstacker.net"
+  default = "https://OIDC_HOSTNAME"
 }
 
 variable "spiffe-id" {
-  default = "spiffe://spire.internal.mattiasgees.be/ns/spiffe-demo/sa/spiffe-customer"
+  default = "spiffe://spire.demo.com/ns/spiffe-demo/sa/spiffe-demo-customer"
 }
 
 variable "aws-region"{

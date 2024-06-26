@@ -60,9 +60,31 @@ The Golang application gets built with golang through a built container. Afterwa
 
 ## Setup
 
+### Prerequisites
+
+To be able to run this demo, there are a few prerequisites
+
+* Ingress controller that is publicly exposed. This is required to make the OIDC endpoint available as well as the demo application.
+* cert-manager installed and configured with a ClusterIssuer `letsencrypt-prod` to be able to request certificates for your OIDC endpoint and the demo application.
+* DNS hostnames configured for OIDC and the demo application. These need to your Ingress controller.
+
+### Prepare environment
+
+Some values are going to be specific to your environment. We are going to prepare these now:
+
+```bash
+export OIDC_HOSTNAME= oidc.yourdomain.com
+export BUCKET_NAME= myrandombucketname
+export DEMO_HOSTNAME= demo.yourdomain.com
+export DEMO_ROGUE_HOSTNAME= demo-rogue.yourdomain.com
+sed -i "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g" deploy/spire/values.yaml
+sed -i "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/BUCKET_NAME/$BUCKET_NAME/g" deploy/terraform/variables.tf
+sed -i "s/BUCKET_NAME/$BUCKET_NAME/g; s/DEMO_HOSTNAME/$DEMO_HOSTNAME/g; s/DEMO_ROGUE_HOSTNAME/$DEMO_ROGUE_HOSTNAME/g" deploy/charts/spiffe-demo/values.yaml
+```
+
 ### SPIRE
 
-Install SPIRE by changing the values (the domain and trust domains) in `./deploy/spire/values.yaml` and installing it with Helm. Make sure that the OIDC endpoint is publicly available as AWS will need to be able to hit that endpoint.
+Install SPIRE with Helm. Make sure that the OIDC endpoint is publicly available as AWS will need to be able to hit that endpoint. You can take a look at the `values.yaml` that is used.
 
 ```bash
 helm upgrade --install -n spire spire-crds spire-crds --repo https://spiffe.github.io/helm-charts-hardened/ --create-namespace
@@ -72,7 +94,7 @@ helm upgrade --install -n spire spire spire -f ./deploy/spire/values.yaml --repo
 
 ### Terraform
 
-Make sure you have access to an AWS account through the CLI, Terraform will use the same method to create the necessary resources. Before running terraform, make sure to change the variables in `deploy/terraform/variables.tf` to match your environment.
+Make sure you have access to an AWS account through the CLI, Terraform will use the same method to create the necessary resources. Take a look at `deploy/terraform/variables.tf` to verify the expected environment specific values.
 
 ```bash
 cd deploy/terraform
@@ -83,7 +105,7 @@ terraform apply
 
 ### Kubernetes
 
-Change the variables in `deploy/chart/spiffe-demo/values.yaml` to match your environment and after that do a Helm install.
+Take a look `deploy/chart/spiffe-demo/values.yaml` to verify it matches your environment and after that do a Helm install.
 
 ```bash
 helm upgrade --install -n spiffe-demo2 spife-demo ./deploy/chart/spiffe-demo --create-namespace

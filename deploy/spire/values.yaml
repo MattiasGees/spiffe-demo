@@ -1,8 +1,8 @@
 global:
   spire:
-    clusterName: playground
-    trustDomain: spire.internal.mattiasgees.be
-    jwtIssuer: https://oidc-discovery.mattias-gcp.jetstacker.net
+    clusterName: democluster
+    trustDomain: spire.demo.com
+    jwtIssuer: https://OIDC_HOSTNAME
     recommendations:
       enabled: false
     namespaces:
@@ -13,7 +13,7 @@ spire-server:
   ca_subject:
     country: UK
     organization: Demo
-    common_name: spire.internal.mattiasgees.be
+    common_name: spire.demo.com
   controllerManager:
     enabled: true
     identities:
@@ -35,14 +35,14 @@ spiffe-oidc-discovery-provider:
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
     hosts:
-    - host: oidc-discovery.mattias-gcp.jetstacker.net
+    - host: OIDC_HOSTNAME
       paths:
         - path: /
           pathType: Prefix
     tls:
     - secretName: oidc-backend-tls
       hosts:
-        - oidc-discovery.${domain}
+        - OIDC_HOSTNAME
 
 spire-agent:
   # This socket path is a requirement for Istio https://istio.io/latest/docs/ops/integrations/spire/
