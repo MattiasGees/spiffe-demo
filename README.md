@@ -11,6 +11,12 @@ This repo contains the following:
 * Kubernetes deployment
 * Dockerfiles
 
+### Architecture
+
+The architecture of the SPIFFE-demo applications is the following when deployed:
+
+![SPIFFE Demo Architecture](img/SPIFFE-Demo-Architecture.png.png)
+
 ### Golang application
 
 A simple Golang tool to showcase SPIFFE possibilities. It has 3 subcommands:
