@@ -15,7 +15,7 @@ This repo contains the following:
 
 The architecture of the SPIFFE-demo applications is the following when deployed:
 
-![SPIFFE Demo Architecture](img/SPIFFE-Demo-Architecture.png.png)
+![SPIFFE Demo Architecture](img/SPIFFE-Demo-Architecture.png)
 
 ### Golang application
 
