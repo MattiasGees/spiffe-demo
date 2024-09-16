@@ -61,6 +61,8 @@ func (c *CustomerService) run() error {
 	http.HandleFunc("/spifferetriever", c.spiffeRetriever)
 	http.HandleFunc("/aws", c.awsRetrievalHandler)
 	http.HandleFunc("/aws/put", c.awsPutHandler)
+	http.HandleFunc("/gcp", c.TODO)
+	http.HandleFunc("/gcp/put", c.TODO)
 	http.HandleFunc("/httpbackend", c.httpBackendHandler)
 	http.HandleFunc("/postgresql", c.postgreSQLRetrievalHandler)
 	http.HandleFunc("/postgresql/put", c.postgreSQLPutHandler)
