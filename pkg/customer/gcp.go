@@ -34,68 +34,27 @@ import (
 )
 
 var (
-	bucketName          = os.Getenv("BUCKET_NAME")
-	projectName         = os.Getenv("PROJECT_NAME")
-	jwtAudience         = os.Getenv("JWT_AUDIENCE")
-	stsAudience         = os.Getenv("STS_AUDIENCE")
-	tokenURL            = os.Getenv("TOKEN_URL")
-	serviceAccountEmail = os.Getenv("SERVICE_ACCOUNT_EMAIL")
-	impersonateScope    = os.Getenv("IMPERSONATE_SCOPE")
+	gcpBucketName          = os.Getenv("BUCKET_NAME")
+	gcpProjectName         = os.Getenv("PROJECT_NAME")
+	gcpJWTAudience         = os.Getenv("JWT_AUDIENCE")
+	gcpSTSAudience         = os.Getenv("STS_AUDIENCE")
+	gcpTokenURL            = os.Getenv("TOKEN_URL")
+	gcpServiceAccountEmail = os.Getenv("SERVICE_ACCOUNT_EMAIL")
+	gcpImpersonateScope    = os.Getenv("IMPERSONATE_SCOPE")
 )
 
-func main() {
-	if bucketName == "" || projectName == "" || jwtAudience == "" || stsAudience == "" || serviceAccountEmail == "" {
-		log.Fatal("Environment variables BUCKET_NAME, PROJECT_NAME, JWT_AUDIENCE, STS_AUDIENCE, and SERVICE_ACCOUNT_EMAIL must be set.")
-	}
-
-	// Set default values if not set
-	if tokenURL == "" {
-		tokenURL = "https://sts.googleapis.com/v1/token"
-	}
-	if impersonateScope == "" {
-		impersonateScope = "https://www.googleapis.com/auth/devstorage.read_write"
-	}
-
-	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/write", handleWrite)
-	http.HandleFunc("/read", handleRead)
-
-	log.Println("Starting server on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func handleIndex(w http.ResponseWriter, r *http.Request) {
-	tmpl := `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>GCS SPIFFE Application</title>
-    </head>
-    <body>
-        <h1>GCS SPIFFE Application</h1>
-        <form action="/write" method="post">
-            <button type="submit">Write to Bucket</button>
-        </form>
-        <form action="/read" method="post">
-            <button type="submit">Read from Bucket</button>
-        </form>
-    </body>
-    </html>
-    `
-	fmt.Fprint(w, tmpl)
-}
-
-func handleWrite(w http.ResponseWriter, r *http.Request) {
+// GCPPutHandler writes data to a GCS bucket.
+func GCPPutHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	client, err := createStorageClient(ctx)
+	client, err := createGCPStorageClient(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create storage client: %v", err), http.StatusInternalServerError)
 		return
 	}
 	defer client.Close()
 
-	obj := client.Bucket(bucketName).Object("Hello")
+	obj := client.Bucket(gcpBucketName).Object("Hello")
 	wc := obj.NewWriter(ctx)
 	if _, err := wc.Write([]byte("world")); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to write to bucket: %v", err), http.StatusInternalServerError)
@@ -106,20 +65,21 @@ func handleWrite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, "Successfully wrote 'world' to 'Hello' in the bucket.")
+	fmt.Fprint(w, "Successfully wrote 'world' to 'Hello' in the GCP bucket.")
 }
 
-func handleRead(w http.ResponseWriter, r *http.Request) {
+// GCPReadHandler reads data from a GCS bucket.
+func GCPReadHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	client, err := createStorageClient(ctx)
+	client, err := createGCPStorageClient(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create storage client: %v", err), http.StatusInternalServerError)
 		return
 	}
 	defer client.Close()
 
-	obj := client.Bucket(bucketName).Object("Hello")
+	obj := client.Bucket(gcpBucketName).Object("Hello")
 	rc, err := obj.NewReader(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to read from bucket: %v", err), http.StatusInternalServerError)
@@ -136,25 +96,24 @@ func handleRead(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Content of 'Hello': %s", data)
 }
 
-func createStorageClient(ctx context.Context) (*storage.Client, error) {
+func createGCPStorageClient(ctx context.Context) (*storage.Client, error) {
 	// Retrieve JWT from SPIRE
-	jwtToken, err := getJWTToken(ctx)
+	jwtToken, err := getGCPJWTToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get JWT token: %v", err)
 	}
 
 	// Create a token source that exchanges the SPIRE JWT for a GCP access token
-	tokenSource := oauth2.ReuseTokenSource(nil, &stsTokenSource{
+	tokenSource := oauth2.ReuseTokenSource(nil, &gcpSTSTokenSource{
 		ctx:                 ctx,
 		jwtToken:            jwtToken,
-		tokenURL:            tokenURL,
-		stsAudience:         stsAudience,
-		stsScope:            "https://www.googleapis.com/auth/cloud-platform", // Scope for STS token
-		impersonateScope:    impersonateScope,                                 // Scope for final access token
-		serviceAccountEmail: serviceAccountEmail,
+		tokenURL:            gcpTokenURL,
+		stsAudience:         gcpSTSAudience,
+		stsScope:            "https://www.googleapis.com/auth/cloud-platform",
+		impersonateScope:    gcpImpersonateScope,
+		serviceAccountEmail: gcpServiceAccountEmail,
 	})
 
-	// Create the storage client with the token source
 	client, err := storage.NewClient(ctx, option.WithTokenSource(tokenSource))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create storage client: %v", err)
@@ -163,35 +122,29 @@ func createStorageClient(ctx context.Context) (*storage.Client, error) {
 	return client, nil
 }
 
-func getJWTToken(ctx context.Context) (string, error) {
-	// Create a Workload API client
+func getGCPJWTToken(ctx context.Context) (string, error) {
 	workloadClient, err := workloadapi.New(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to create workload API client: %v", err)
 	}
 	defer workloadClient.Close()
 
-	// Set the audience to the resource you're accessing
 	params := jwtsvid.Params{
-		Audience: jwtAudience,
+		Audience: gcpJWTAudience,
 	}
 
-	// Fetch the JWT SVID
 	jwtSVID, err := workloadClient.FetchJWTSVID(ctx, params)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch JWT SVID: %v", err)
 	}
 
 	jwtToken := jwtSVID.Marshal()
-
-	// Log the JWT token (only for debugging; remove in production)
-	log.Printf("Fetched JWT Token: %s", jwtToken)
+	log.Printf("Fetched GCP JWT Token: %s", jwtToken)
 
 	return jwtToken, nil
 }
 
-// stsTokenSource exchanges the SPIRE JWT for a GCP access token using the STS endpoint
-type stsTokenSource struct {
+type gcpSTSTokenSource struct {
 	ctx                 context.Context
 	jwtToken            string
 	tokenURL            string
@@ -201,14 +154,12 @@ type stsTokenSource struct {
 	serviceAccountEmail string
 }
 
-func (s *stsTokenSource) Token() (*oauth2.Token, error) {
-	// Step 1: Exchange JWT for STS access token
+func (s *gcpSTSTokenSource) Token() (*oauth2.Token, error) {
 	stsAccessToken, err := s.exchangeToken()
 	if err != nil {
 		return nil, err
 	}
 
-	// Step 2: Impersonate the service account using the STS access token
 	impToken, err := s.impersonateServiceAccount(stsAccessToken)
 	if err != nil {
 		return nil, err
@@ -217,8 +168,7 @@ func (s *stsTokenSource) Token() (*oauth2.Token, error) {
 	return impToken, nil
 }
 
-func (s *stsTokenSource) exchangeToken() (string, error) {
-	// Build the STS request
+func (s *gcpSTSTokenSource) exchangeToken() (string, error) {
 	reqBody := struct {
 		GrantType          string `json:"grant_type"`
 		RequestedTokenType string `json:"requested_token_type"`
@@ -229,19 +179,17 @@ func (s *stsTokenSource) exchangeToken() (string, error) {
 	}{
 		GrantType:          "urn:ietf:params:oauth:grant-type:token-exchange",
 		RequestedTokenType: "urn:ietf:params:oauth:token-type:access_token",
-		Scope:              s.stsScope, // Use stsScope here
+		Scope:              s.stsScope,
 		Audience:           s.stsAudience,
 		SubjectToken:       s.jwtToken,
 		SubjectTokenType:   "urn:ietf:params:oauth:token-type:jwt",
 	}
 
-	// Marshal the request body
 	body, err := json.Marshal(reqBody)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal STS request: %v", err)
 	}
 
-	// Make the HTTP request to the STS endpoint
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", s.tokenURL, bytes.NewReader(body))
 	if err != nil {
@@ -273,14 +221,13 @@ func (s *stsTokenSource) exchangeToken() (string, error) {
 	return stsTokenResp.AccessToken, nil
 }
 
-func (s *stsTokenSource) impersonateServiceAccount(stsAccessToken string) (*oauth2.Token, error) {
-	// Build the impersonation request
+func (s *gcpSTSTokenSource) impersonateServiceAccount(stsAccessToken string) (*oauth2.Token, error) {
 	impersonationURL := fmt.Sprintf("https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/%s:generateAccessToken", s.serviceAccountEmail)
 
 	impReqBody := struct {
 		Scope []string `json:"scope"`
 	}{
-		Scope: []string{s.impersonateScope}, // Use impersonateScope here
+		Scope: []string{s.impersonateScope},
 	}
 
 	impBody, err := json.Marshal(impReqBody)
@@ -288,7 +235,6 @@ func (s *stsTokenSource) impersonateServiceAccount(stsAccessToken string) (*oaut
 		return nil, fmt.Errorf("failed to marshal impersonation request: %v", err)
 	}
 
-	// Make the HTTP request to the impersonation endpoint
 	client := &http.Client{}
 	impReq, err := http.NewRequest("POST", impersonationURL, bytes.NewReader(impBody))
 	if err != nil {
