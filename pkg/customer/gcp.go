@@ -16,32 +16,27 @@ limitations under the License.
 package customer
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/spiffe/go-spiffe/v2/svid/jwtsvid"
-	"github.com/spiffe/go-spiffe/v2/workloadapi"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 )
 
 var (
-	gcpBucketName          = os.Getenv("BUCKET_NAME")
-	gcpProjectName         = os.Getenv("PROJECT_NAME")
-	gcpJWTAudience         = os.Getenv("JWT_AUDIENCE")
-	gcpSTSAudience         = os.Getenv("STS_AUDIENCE")
-	gcpTokenURL            = os.Getenv("TOKEN_URL")
-	gcpServiceAccountEmail = os.Getenv("SERVICE_ACCOUNT_EMAIL")
-	gcpImpersonateScope    = os.Getenv("IMPERSONATE_SCOPE")
+	gcpBucketName = os.Getenv("BUCKET_NAME")
 )
+
+type AccessTokenResponse struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int    `json:"expires_in"`
+	TokenType   string `json:"token_type"`
+}
 
 // GCPPutHandler writes data to a GCS bucket.
 func GCPPutHandler(w http.ResponseWriter, r *http.Request) {
@@ -97,21 +92,15 @@ func GCPReadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createGCPStorageClient(ctx context.Context) (*storage.Client, error) {
-	// Retrieve JWT from SPIRE
-	jwtToken, err := getGCPJWTToken(ctx)
+	// Call the spiffe-gcp-proxy to get the access token
+	accessToken, err := getGCPAccessTokenFromProxy(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get JWT token: %v", err)
+		return nil, fmt.Errorf("failed to get access token from proxy: %v", err)
 	}
 
-	// Create a token source that exchanges the SPIRE JWT for a GCP access token
-	tokenSource := oauth2.ReuseTokenSource(nil, &gcpSTSTokenSource{
-		ctx:                 ctx,
-		jwtToken:            jwtToken,
-		tokenURL:            gcpTokenURL,
-		stsAudience:         gcpSTSAudience,
-		stsScope:            "https://www.googleapis.com/auth/cloud-platform",
-		impersonateScope:    gcpImpersonateScope,
-		serviceAccountEmail: gcpServiceAccountEmail,
+	// Use the access token to create the storage client
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{
+		AccessToken: accessToken,
 	})
 
 	client, err := storage.NewClient(ctx, option.WithTokenSource(tokenSource))
@@ -122,157 +111,38 @@ func createGCPStorageClient(ctx context.Context) (*storage.Client, error) {
 	return client, nil
 }
 
-func getGCPJWTToken(ctx context.Context) (string, error) {
-	workloadClient, err := workloadapi.New(ctx)
+func getGCPAccessTokenFromProxy(ctx context.Context) (string, error) {
+	// Get the proxy URL from an environment variable (default to localhost:8080)
+	GCPproxyURL := os.Getenv("SPIFFE_GCP_PROXY_URL")
+	if GCPproxyURL == "" {
+		GCPproxyURL = "http://localhost:8080"
+	}
+
+	// Construct the full URL for the token request
+	tokenURL := fmt.Sprintf("%s/computeMetadata/v1/instance/service-accounts/default/token", GCPproxyURL)
+
+	// Request token from spiffe-gcp-proxy
+	req, err := http.NewRequestWithContext(ctx, "GET", tokenURL, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to create workload API client: %v", err)
-	}
-	defer workloadClient.Close()
-
-	params := jwtsvid.Params{
-		Audience: gcpJWTAudience,
+		return "", fmt.Errorf("failed to create request: %v", err)
 	}
 
-	jwtSVID, err := workloadClient.FetchJWTSVID(ctx, params)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch JWT SVID: %v", err)
-	}
-
-	jwtToken := jwtSVID.Marshal()
-	log.Printf("Fetched GCP JWT Token: %s", jwtToken)
-
-	return jwtToken, nil
-}
-
-type gcpSTSTokenSource struct {
-	ctx                 context.Context
-	jwtToken            string
-	tokenURL            string
-	stsAudience         string
-	stsScope            string
-	impersonateScope    string
-	serviceAccountEmail string
-}
-
-func (s *gcpSTSTokenSource) Token() (*oauth2.Token, error) {
-	stsAccessToken, err := s.exchangeToken()
-	if err != nil {
-		return nil, err
-	}
-
-	impToken, err := s.impersonateServiceAccount(stsAccessToken)
-	if err != nil {
-		return nil, err
-	}
-
-	return impToken, nil
-}
-
-func (s *gcpSTSTokenSource) exchangeToken() (string, error) {
-	reqBody := struct {
-		GrantType          string `json:"grant_type"`
-		RequestedTokenType string `json:"requested_token_type"`
-		Scope              string `json:"scope"`
-		Audience           string `json:"audience"`
-		SubjectToken       string `json:"subject_token"`
-		SubjectTokenType   string `json:"subject_token_type"`
-	}{
-		GrantType:          "urn:ietf:params:oauth:grant-type:token-exchange",
-		RequestedTokenType: "urn:ietf:params:oauth:token-type:access_token",
-		Scope:              s.stsScope,
-		Audience:           s.stsAudience,
-		SubjectToken:       s.jwtToken,
-		SubjectTokenType:   "urn:ietf:params:oauth:token-type:jwt",
-	}
-
-	body, err := json.Marshal(reqBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal STS request: %v", err)
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", s.tokenURL, bytes.NewReader(body))
-	if err != nil {
-		return "", fmt.Errorf("failed to create STS request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req.WithContext(s.ctx))
-	if err != nil {
-		return "", fmt.Errorf("failed to exchange token: %v", err)
+		return "", fmt.Errorf("failed to get response from proxy: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		responseBody, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("token exchange failed with status %d: %s", resp.StatusCode, responseBody)
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("proxy returned non-200 status code: %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	var stsTokenResp struct {
-		AccessToken string `json:"access_token"`
-		ExpiresIn   int64  `json:"expires_in"`
-		TokenType   string `json:"token_type"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&stsTokenResp); err != nil {
-		return "", fmt.Errorf("failed to decode STS token response: %v", err)
-	}
-
-	return stsTokenResp.AccessToken, nil
-}
-
-func (s *gcpSTSTokenSource) impersonateServiceAccount(stsAccessToken string) (*oauth2.Token, error) {
-	impersonationURL := fmt.Sprintf("https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/%s:generateAccessToken", s.serviceAccountEmail)
-
-	impReqBody := struct {
-		Scope []string `json:"scope"`
-	}{
-		Scope: []string{s.impersonateScope},
-	}
-
-	impBody, err := json.Marshal(impReqBody)
+	var tokenResp AccessTokenResponse
+	err = json.NewDecoder(resp.Body).Decode(&tokenResp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal impersonation request: %v", err)
+		return "", fmt.Errorf("failed to decode proxy response: %v", err)
 	}
 
-	client := &http.Client{}
-	impReq, err := http.NewRequest("POST", impersonationURL, bytes.NewReader(impBody))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create impersonation request: %v", err)
-	}
-	impReq.Header.Set("Content-Type", "application/json")
-	impReq.Header.Set("Authorization", "Bearer "+stsAccessToken)
-
-	impResp, err := client.Do(impReq.WithContext(s.ctx))
-	if err != nil {
-		return nil, fmt.Errorf("failed to impersonate service account: %v", err)
-	}
-	defer impResp.Body.Close()
-
-	if impResp.StatusCode != http.StatusOK {
-		responseBody, _ := io.ReadAll(impResp.Body)
-		return nil, fmt.Errorf("service account impersonation failed with status %d: %s", impResp.StatusCode, responseBody)
-	}
-
-	var impTokenResp struct {
-		AccessToken string `json:"accessToken"`
-		ExpireTime  string `json:"expireTime"`
-	}
-
-	if err := json.NewDecoder(impResp.Body).Decode(&impTokenResp); err != nil {
-		return nil, fmt.Errorf("failed to decode impersonation token response: %v", err)
-	}
-
-	expiry, err := time.Parse(time.RFC3339, impTokenResp.ExpireTime)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token expiry time: %v", err)
-	}
-
-	token := &oauth2.Token{
-		AccessToken: impTokenResp.AccessToken,
-		TokenType:   "Bearer",
-		Expiry:      expiry,
-	}
-
-	return token, nil
+	return tokenResp.AccessToken, nil
 }
