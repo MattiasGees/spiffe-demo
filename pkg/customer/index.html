@@ -22,6 +22,8 @@
     <button onclick="makeRequest('/httpbackend', 'response2')">SPIFFE with Envoy and an HTTP backend</button>
     <button onclick="makeRequest('/aws/put', 'response3')">Write a file to S3 bucket</button>
     <button onclick="makeRequest('/aws', 'response4')">Retrieve a file from S3 bucket</button>
+    <button onclick="makeRequest('/gcp/put', 'response7')">Write a file to GCS bucket</button>
+    <button onclick="makeRequest('/gcp', 'response8')">Retrieve a file from GCS bucket</button>
     <button onclick="makeRequest('/postgresql/put', 'response5')">Write to PostgreSQL</button>
     <button onclick="makeRequest('/postgresql', 'response6')">Retrieve from PostgreSQL</button>
 
@@ -31,6 +33,8 @@
     <div class="response" id="response4"></div>
     <div class="response" id="response5"></div>
     <div class="response" id="response6"></div>
+    <div class="response" id="response7"></div>
+    <div class="response" id="response8"></div>
 
     <script>
         function makeRequest(subpath, responseId) {
