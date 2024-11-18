@@ -13,3 +13,13 @@ variable "spiffe-id" {
 variable "aws-region"{
   default = "eu-west-2"
 }
+
+variable "enable-aws" {
+  type = bool
+  default = true
+}
+
+variable "enable-gcp" {
+  type = bool
+  default = true
+}
