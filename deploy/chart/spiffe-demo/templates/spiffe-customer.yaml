@@ -74,6 +74,36 @@ spec:
           - containerPort: 8080
             name: http
             protocol: TCP
+        - name: gcp-proxy
+          image: europe-west2-docker.pkg.dev/jetstack-workshops/workshops/spiffe-gcp-proxy:v0.3.0
+          ports:
+            - containerPort: 8081
+          volumeMounts:
+            - name: spiffe-workload-api
+              mountPath: /spiffe-workload-api
+              readOnly: true
+          env:
+            - name: SPIFFE_AGENT_SOCKET_PATH
+              value: "unix://{{- .Values.spiffe.socketPath -}}"
+            - name: SERVICE_ACCOUNT
+              value: spire-storage-writer@{{- .Values.gcpProxy.gcpProjectName -}}.iam.gserviceaccount.com
+            - name: PROJECT_NAME
+              value: "{{- .Values.gcpProxy.gcpProjectName -}}"
+            - name: PROJECT_NUMBER
+              value: "{{- .Values.gcpProxy.gcpProjectNumber -}}"
+            - name: PROVIDER_ID
+              value: spire-workload-provider
+            - name: POOL_ID
+              value: spire-workload-pool
+          command:
+            - /app
+          args:
+            - -spiffe_agent_socket_path=$(SPIFFE_AGENT_SOCKET_PATH)
+            - -service_account=$(SERVICE_ACCOUNT)
+            - -projectId=$(PROJECT_NAME)
+            - -projectNumber=$(PROJECT_NUMBER)
+            - -providerId=$(PROVIDER_ID)
+            - -poolId=$(POOL_ID)
       volumes:
       - csi:
           driver: csi.spiffe.io

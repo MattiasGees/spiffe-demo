@@ -20,6 +20,10 @@ initContainer:
   awsRoleArn: arn:aws:iam::228615251467:role/demo-spiffe-role
   JWTAudience: demo
 
+gcpProxy:
+  gcpProjectName: GCP_PROJECT_NAME
+  gcpProjectNumber: GCP_PROJECT_NUMBER
+
 spiffeCustomer:
   awsRegion: eu-west-2
   s3Bucket: BUCKET_NAME
