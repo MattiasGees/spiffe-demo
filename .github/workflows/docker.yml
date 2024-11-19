@@ -31,7 +31,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           context: .
-          tags: mattiasgees/spiffe-demo:latest
+          tags: mattiasgees/spiffe-demo:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
 
       - name: Build and push spiffe-demo init
         uses: docker/build-push-action@v6
@@ -39,7 +39,7 @@ jobs:
             platforms: linux/amd64,linux/arm64
             push: true
             context: ./deploy/initcontainer
-            tags: mattiasgees/spiffe-demo-init:latest
+            tags: mattiasgees/spiffe-demo-init:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
 
       - name: Build and push spiffe-postgres
         uses: docker/build-push-action@v6
@@ -47,7 +47,7 @@ jobs:
             platforms: linux/amd64,linux/arm64
             push: true
             context: ./deploy/postgresql
-            tags: mattiasgees/spiffe-postgres:latest
+            tags: mattiasgees/spiffe-postgres:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
 
       - name: Build and push spiffe-helper
         uses: docker/build-push-action@v6
@@ -55,4 +55,4 @@ jobs:
             platforms: linux/amd64,linux/arm64
             push: true
             context: ./deploy/spiffe-helper
-            tags: mattiasgees/spiffe-helper:latest
+            tags: mattiasgees/spiffe-helper:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
