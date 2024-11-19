@@ -1,11 +1,23 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+data "tls_certificate" "oidc-certificate" {
+  url = var.oidc-url
+}
+
 provider "aws" {
   region = var.aws-region
 }
 
 resource "aws_s3_bucket" "oidc-test" {
-  count = var.enable-aws ? 1 : 0
   bucket = var.bucket-name
-  
+
   tags = {
     Name        = var.bucket-name
     Environment = "demo"
@@ -13,7 +25,6 @@ resource "aws_s3_bucket" "oidc-test" {
 }
 
 resource "aws_iam_openid_connect_provider" "oidc-spire" {
-  count = var.enable-aws ? 1 : 0
   url = var.oidc-url
 
   client_id_list = [
@@ -24,7 +35,6 @@ resource "aws_iam_openid_connect_provider" "oidc-spire" {
 }
 
 resource "aws_iam_role" "oidc-spire-role" {
-  count = var.enable-aws ? 1 : 0
   name = "demo-spiffe-role"
 
   assume_role_policy = jsonencode({
@@ -48,9 +58,8 @@ resource "aws_iam_role" "oidc-spire-role" {
 }
 
 resource "aws_iam_role_policy" "s3" {
-  count = var.enable-aws ? 1 : 0
-  name        = "demo-spiffe-policy"
-  role        = aws_iam_role.oidc-spire-role.name
+  name = "demo-spiffe-policy"
+  role = aws_iam_role.oidc-spire-role.name
 
   policy = <<EOF
 {
