@@ -60,10 +60,3 @@ publish:
 		--output "type=docker,push=true" \
 		--tag $(SPFFE_GCP_PROXY_IMAGE_NAME) \
 		./deploy/spiffe-gcp-proxy
-
-gcp-proxy:
-	@docker buildx create --use --name=crossplat --node=crossplat && \
-	docker buildx build \
-		--output "type=docker,push=false" \
-		--tag $(SPFFE_GCP_PROXY_IMAGE_NAME) \
-		./deploy/spiffe-gcp-proxy
