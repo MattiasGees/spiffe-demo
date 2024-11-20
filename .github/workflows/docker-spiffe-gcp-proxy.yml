@@ -31,4 +31,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           context: ./deploy/spiffe-gcp-proxy
-          tags: mattiasgees/spiffe-demo:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
+          tags: mattiasgees/spiffe-gcp-proxy:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
