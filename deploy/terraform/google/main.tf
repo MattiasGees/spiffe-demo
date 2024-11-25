@@ -45,13 +45,12 @@ resource "google_iam_workload_identity_pool_provider" "spire-provider" {
   workload_identity_pool_provider_id = "spire-oidc-provider"
   display_name                       = "SPIRE Provider"
   description                        = "OIDC Provider for SPIRE"
-  attribute_condition                = "true"
   attribute_mapping = {
     "google.subject"      = "assertion.sub"
     "attribute.spiffe_id" = "assertion.sub"
   }
   oidc {
-    allowed_audiences = ["//iam.googleapis.com/projects/${var.gcp-project}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.spire-pool.name}/providers/spire-workload-provider"]
+    allowed_audiences = ["//iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/spire-workload-pool/providers/spire-oidc-provider"]
     issuer_uri        = var.oidc-url
   }
 }

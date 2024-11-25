@@ -3,7 +3,7 @@ name: spiffe-demo
 description: >
   A Helm chart for deploying the SPIFFE demo
 type: application
-version: 0.0.1
+version: 0.0.2
 appVersion: "0.0.1"
 keywords: ["spire-demo"]
 home: https://github.com/
