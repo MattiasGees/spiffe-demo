@@ -10,6 +10,10 @@ variable "spiffe-id" {
   default = "spiffe://spire.demo.com/ns/spiffe-demo/sa/spiffe-demo-customer"
 }
 
-variable "aws-region"{
-  default = "eu-west-2"
+variable "gcp-region" {
+  default = "europe-west1"
+}
+
+variable "gcp-project" {
+  default = "jetstack-mattias"
 }

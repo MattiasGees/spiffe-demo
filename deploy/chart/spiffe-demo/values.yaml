@@ -20,9 +20,16 @@ initContainer:
   awsRoleArn: arn:aws:iam::228615251467:role/demo-spiffe-role
   JWTAudience: demo
 
+spiffeGcpProxy:
+  imageName: mattiasgees/spiffe-gcp-proxy
+  imageTag: latest
+  gcpProjectName: GCP_PROJECT_NAME
+  gcpProjectNumber: "GCP_PROJECT_NUMBER"
+
 spiffeCustomer:
   awsRegion: eu-west-2
   s3Bucket: BUCKET_NAME
+  gcpBucket: GCP_BUCKET_NAME
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     kubernetes.io/ingress.class: nginx

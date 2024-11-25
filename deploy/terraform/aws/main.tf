@@ -7,21 +7,21 @@ terraform {
   }
 }
 
+data "tls_certificate" "oidc-certificate" {
+  url = var.oidc-url
+}
+
 provider "aws" {
   region = var.aws-region
 }
 
 resource "aws_s3_bucket" "oidc-test" {
   bucket = var.bucket-name
-  
+
   tags = {
     Name        = var.bucket-name
     Environment = "demo"
   }
-}
-
-data "tls_certificate" "oidc-certificate" {
-  url = var.oidc-url
 }
 
 resource "aws_iam_openid_connect_provider" "oidc-spire" {
@@ -58,8 +58,8 @@ resource "aws_iam_role" "oidc-spire-role" {
 }
 
 resource "aws_iam_role_policy" "s3" {
-  name        = "demo-spiffe-policy"
-  role        = aws_iam_role.oidc-spire-role.name
+  name = "demo-spiffe-policy"
+  role = aws_iam_role.oidc-spire-role.name
 
   policy = <<EOF
 {
