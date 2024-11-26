@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM:-linux/amd64} ubuntu:23.04 AS tools-builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} ubuntu:24.04 AS tools-builder
 
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
