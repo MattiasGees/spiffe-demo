@@ -70,10 +70,43 @@ spec:
             value: "1"
           - name: SPIFFE_ENDPOINT_SOCKET
             value: "unix://{{- .Values.spiffe.socketPath -}}"
+          - name: SPIFFE_GCP_PROXY_URL
+            value: http://localhost:8081
+          - name: BUCKET_NAME
+            value: "{{- .Values.spiffeCustomer.gcpBucket -}}"
           ports:
           - containerPort: 8080
             name: http
             protocol: TCP
+        - name: gcp-proxy
+          image: "{{- .Values.spiffeGcpProxy.imageName -}}:{{- .Values.spiffeGcpProxy.imageTag -}}"
+          ports:
+            - containerPort: 8081
+          volumeMounts:
+            - name: spiffe-workload-api
+              mountPath: /spiffe-workload-api
+              readOnly: true
+          env:
+            - name: SPIFFE_AGENT_SOCKET_PATH
+              value: "unix://{{- .Values.spiffe.socketPath -}}"
+            - name: SERVICE_ACCOUNT
+              value: spire-storage-writer@{{- .Values.spiffeGcpProxy.gcpProjectName -}}.iam.gserviceaccount.com
+            - name: PROJECT_NAME
+              value: "{{- .Values.spiffeGcpProxy.gcpProjectName -}}"
+            - name: PROJECT_NUMBER
+              value: "{{- .Values.spiffeGcpProxy.gcpProjectNumber -}}"
+            - name: PROVIDER_ID
+              value: spire-oidc-provider
+            - name: POOL_ID
+              value: spire-workload-pool
+          args:
+            - -bind=:8081
+            - -spiffe_agent_socket_path=$(SPIFFE_AGENT_SOCKET_PATH)
+            - -service_account=$(SERVICE_ACCOUNT)
+            - -projectId=$(PROJECT_NAME)
+            - -projectNumber=$(PROJECT_NUMBER)
+            - -providerId=$(PROVIDER_ID)
+            - -poolId=$(POOL_ID)
       volumes:
       - csi:
           driver: csi.spiffe.io

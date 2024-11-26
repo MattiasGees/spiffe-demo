@@ -55,12 +55,14 @@ func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepat
 
 // This gets called from the main function and actually starts that customer HTTP server.
 func (c *CustomerService) run() error {
-	// Set up a all of the resource handlers.
+	// Set up all of the resource handlers.
 	http.HandleFunc("/", c.webpageHandler)
 	http.HandleFunc("/mtls", c.mtlsHandler)
 	http.HandleFunc("/spifferetriever", c.spiffeRetriever)
 	http.HandleFunc("/aws", c.awsRetrievalHandler)
 	http.HandleFunc("/aws/put", c.awsPutHandler)
+	http.HandleFunc("/gcp/put", GCPPutHandler)
+	http.HandleFunc("/gcp", GCPReadHandler)
 	http.HandleFunc("/httpbackend", c.httpBackendHandler)
 	http.HandleFunc("/postgresql", c.postgreSQLRetrievalHandler)
 	http.HandleFunc("/postgresql/put", c.postgreSQLPutHandler)

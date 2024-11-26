@@ -4,6 +4,7 @@ IMAGE_NAME ?= mattiasgees/spiffe-demo:latest
 INIT_IMAGE_NAME ?= mattiasgees/spiffe-demo-init:latest
 POSTGRES_IMAGE_NAME ?= mattiasgees/spiffe-postgres:latest
 SPFFE_HELPER_IMAGE_NAME ?= mattiasgees/spiffe-helper:latest
+SPIFFE_GCP_PROXY_IMAGE_NAME ?= mattiasgees/spiffe-gcp-proxy:latest
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 .PHONY: build # Build the container image
@@ -26,6 +27,10 @@ build:
 		--output "type=docker,push=false" \
 		--tag $(SPFFE_HELPER_IMAGE_NAME) \
 		./deploy/spiffe-helper
+	docker buildx build \
+		--output "type=docker,push=false" \
+		--tag $(SPFFE_GCP_PROXY_IMAGE_NAME) \
+		./deploy/spiffe-gcp-proxy
 
 .PHONY: publish # Push all the image to the remote registry
 publish:
@@ -51,3 +56,7 @@ publish:
 		--output "type=image,push=true" \
 		--tag $(SPFFE_HELPER_IMAGE_NAME) \
 		./deploy/spiffe-helper
+	docker buildx build \
+		--output "type=docker,push=true" \
+		--tag $(SPFFE_GCP_PROXY_IMAGE_NAME) \
+		./deploy/spiffe-gcp-proxy
