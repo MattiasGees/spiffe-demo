@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM:-linux/amd64} ubuntu:23.04 AS tools-builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} ubuntu:24.04 AS tools-builder
 
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
@@ -12,7 +12,7 @@ RUN wget https://github.com/spiffe/spiffe-helper/releases/download/v0.7.0/spiffe
 RUN tar zvxf spiffe-helper-v0.7.0.tar.gz
 RUN chmod +x spiffe-helper
 
-FROM --platform=${TARGETPLATFORM:-linux/amd64} ubuntu:23.04
+FROM --platform=${TARGETPLATFORM:-linux/amd64} ubuntu:24.04
 
 RUN apt-get update && apt-get install -y \
     postgresql-client \
