@@ -1,5 +1,5 @@
 variable "bucket-name" {
-  default = "BUCKET_NAME"
+  default = "GCP_BUCKET_NAME"
 }
 
 variable "oidc-url" {

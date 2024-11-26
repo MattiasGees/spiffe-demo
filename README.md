@@ -36,7 +36,7 @@ The customer is the entry point for customers through an Ingress. It serves a si
 
 ### Terraform
 
-The setup of the OIDC federation between our SPIRE install and AWS happens through this. It also creates the necessary S3 bucket and IAM roles and policies so our customer application can authenticate to AWS.
+The setup of the OIDC federation between our SPIRE install with AWS and Google Cloud happens through Terraform. It also creates the necessary GCS, S3 buckets and IAM roles and policies so our customer application can authenticate to AWS and Google Cloud.
 
 ### Kubernetes deployment
 
@@ -61,6 +61,10 @@ Adds 2 extra things to the [default](https://hub.docker.com/_/postgres) PostgreS
 
 Creates a Docker image for the latest version of the SPIFFE-helper. The SPIFFE-helper will than be used as a sidecar container next to the PostgreSQL container to make sure PostgreSQL always has the latest SVID loaded.
 
+#### spiffe-gcp-proxy
+
+Creates a Docker image for the latests version of the [spiffe-gcp-proxy](https://github.com/GoogleCloudPlatform/professional-services/tree/main/tools/spiffe-gcp-proxy). The SPIFFE GCP Proxy will than be used as a sidecar container next to our customer application to intercept calls to Google Cloud and add the necessary SPIFFE authentication credentials to it.
+
 #### Go application
 
 The Golang application gets built with golang through a built container. Afterwards `ca-certificates` and the `spiffe-aws-assume-role` binary get added to it as well.
@@ -75,18 +79,27 @@ To be able to run this demo, there are a few prerequisites
 * cert-manager installed and configured with a ClusterIssuer `letsencrypt-prod` to be able to request certificates for your OIDC endpoint and the demo application.
 * DNS hostnames configured for OIDC and the demo application. These need to your Ingress controller.
 
+### Cloud
+
+The AWS and Google Cloud bits are optional. When you deploy the `spiffe-demo` application on your Kubernetes cluster, it will deploy everything but off-course if you haven't done the cloud provider setup those specific bits will not work.
+
 ### Prepare environment
 
 Some values are going to be specific to your environment. We are going to prepare these now:
 
 ```bash
-export OIDC_HOSTNAME=oidc.yourdomain.com
-export BUCKET_NAME=myrandombucketname
 export DEMO_HOSTNAME=demo.yourdomain.com
 export DEMO_ROGUE_HOSTNAME=demo-rogue.yourdomain.com
+export OIDC_HOSTNAME=oidc.yourdomain.com
+export AWS_BUCKET_NAME=myrandombucketname
+export GCP_BUCKET_NAME=mygcpbucketname
+export GCP_PROJECT_NAME=my-gcp-project-name
+export GCP_PROJECT_NUMBER=11111111
+
 sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g" deploy/spire/values.yaml
-sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/BUCKET_NAME/$BUCKET_NAME/g" deploy/terraform/variables.tf
-sed -i '' "s/BUCKET_NAME/$BUCKET_NAME/g; s/DEMO_HOSTNAME/$DEMO_HOSTNAME/g; s/DEMO_ROGUE_HOSTNAME/$DEMO_ROGUE_HOSTNAME/g" deploy/chart/spiffe-demo/values.yaml
+sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g" deploy/terraform/aws/variables.tf
+sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g" deploy/terraform/google/variables.tf
+sed -i '' "s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g; s/GCP_PROJECT_NAME/$GCP_PROJECT_NAME/g; s/GCP_PROJECT_NUMBER/$GCP_PROJECT_NUMBER/g; s/DEMO_HOSTNAME/$DEMO_HOSTNAME/g; s/DEMO_ROGUE_HOSTNAME/$DEMO_ROGUE_HOSTNAME/g" deploy/chart/spiffe-demo/values.yaml
 ```
 
 ### SPIRE
@@ -101,10 +114,23 @@ helm upgrade --install -n spire spire spire -f ./deploy/spire/values.yaml --repo
 
 ### Terraform
 
-Make sure you have access to an AWS account through the CLI, Terraform will use the same method to create the necessary resources. Take a look at `deploy/terraform/variables.tf` to verify the expected environment specific values.
+#### AWS
+
+Make sure you have access to an AWS account through the CLI, Terraform will use the same method to create the necessary resources. Take a look at `deploy/terraform/aws/variables.tf` to verify the expected environment specific values.
 
 ```bash
-cd deploy/terraform
+cd deploy/terraform/aws
+# Change variables.tf to match your environment before running the next command
+terraform init
+terraform apply
+```
+
+#### Google Cloud
+
+Make sure you have access to an Google Cloud account. Take a look at `deploy/terraform/google/variables.tf` to verify the expected environment specific values.
+
+```bash
+cd deploy/terraform/google
 # Change variables.tf to match your environment before running the next command
 terraform init
 terraform apply

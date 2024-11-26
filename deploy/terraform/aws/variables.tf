@@ -1,5 +1,5 @@
 variable "bucket-name" {
-  default = "BUCKET_NAME"
+  default = "AWS_BUCKET_NAME"
 }
 
 variable "oidc-url" {
