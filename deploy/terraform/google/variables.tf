@@ -15,5 +15,5 @@ variable "gcp-region" {
 }
 
 variable "gcp-project" {
-  default = "jetstack-mattias"
+  default = "GCP_PROJECT_NAME"
 }

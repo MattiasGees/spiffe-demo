@@ -98,7 +98,7 @@ export GCP_PROJECT_NUMBER=11111111
 
 sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g" deploy/spire/values.yaml
 sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g" deploy/terraform/aws/variables.tf
-sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g" deploy/terraform/google/variables.tf
+sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g; s/GCP_PROJECT_NAME/$GCP_PROJECT_NAME/g" deploy/terraform/google/variables.tf
 sed -i '' "s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g; s/GCP_PROJECT_NAME/$GCP_PROJECT_NAME/g; s/GCP_PROJECT_NUMBER/$GCP_PROJECT_NUMBER/g; s/DEMO_HOSTNAME/$DEMO_HOSTNAME/g; s/DEMO_ROGUE_HOSTNAME/$DEMO_ROGUE_HOSTNAME/g" deploy/chart/spiffe-demo/values.yaml
 ```
 
