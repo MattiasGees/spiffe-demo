@@ -22,8 +22,8 @@ data "google_project" "project" {
 
 
 resource "google_storage_bucket" "bucket" {
-  name                        = var.gcp-project
-  location                    = "europe-west2"
+  name                        = var.bucket-name
+  location                    = var.gcp-region
   storage_class               = "STANDARD"
   uniform_bucket_level_access = true
 
@@ -87,5 +87,3 @@ resource "google_service_account_iam_binding" "spire_storage_writer_workload_ide
     "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/spire-workload-pool/attribute.spiffe_id/${var.spiffe-id}"
   ]
 }
-
-
