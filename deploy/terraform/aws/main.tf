@@ -25,7 +25,7 @@ resource "aws_s3_bucket" "oidc-test" {
 }
 
 resource "aws_iam_openid_connect_provider" "oidc-spire" {
-  url = var.oidc-url
+  url = "https://${var.oidc-url}"
 
   client_id_list = [
     "demo",
@@ -48,8 +48,8 @@ resource "aws_iam_role" "oidc-spire-role" {
         },
         Condition = {
           StringEquals = {
-            "oidc-discovery.mattias-gcp.jetstacker.net:aud" = "demo",
-            "oidc-discovery.mattias-gcp.jetstacker.net:sub" = "${var.spiffe-id}"
+            "${var.oidc-url}:aud" = "demo",
+            "${var.oidc-url}:sub" = "${var.spiffe-id}"
           }
         }
       },

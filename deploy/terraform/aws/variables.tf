@@ -3,7 +3,7 @@ variable "bucket-name" {
 }
 
 variable "oidc-url" {
-  default = "https://OIDC_HOSTNAME"
+  default = "OIDC_HOSTNAME"
 }
 
 variable "spiffe-id" {
