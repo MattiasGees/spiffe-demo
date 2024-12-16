@@ -8,7 +8,7 @@ terraform {
 }
 
 data "tls_certificate" "oidc-certificate" {
-  url = var.oidc-url
+  url = "https://${var.oidc-url}"
 }
 
 provider "aws" {
