@@ -137,6 +137,9 @@ metadata:
     {{- end }}
   name: {{ include "spiffeDemo.name" . }}-customer
 spec:
+  {{- if .Values.spiffeCustomer.ingressClassName }}
+  ingressClassName: {{ .Values.spiffeCustomer.ingressClassName | quote }}
+  {{- end }}
   rules:
   - host: {{ .Values.spiffeCustomer.hostname }}
     http:
