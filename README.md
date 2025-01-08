@@ -1,6 +1,6 @@
 # SPIFFE Demo
 
-This SPIFFE demo repository aims to showcase the possibilities of different SPIFFE use-cases and requirements end-users might have in real production environments.
+This SPIFFE demo repository aims to showcase the possibilities of different SPIFFE use-cases and requirements end-users might have in real production environments to integrate with their applications.
 
 ## Structure
 
