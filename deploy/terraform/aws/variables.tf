@@ -13,3 +13,12 @@ variable "spiffe-id" {
 variable "aws-region" {
   default = "eu-west-2"
 }
+
+variable "auth-type" {
+  description = "Authentication type to use either pick JWT or X509"
+  default = "JWT"
+}
+
+variable "root-CA" {
+  default = "ROOT_CA"
+}
