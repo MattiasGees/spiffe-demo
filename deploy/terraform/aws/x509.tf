@@ -4,7 +4,7 @@ resource "aws_rolesanywhere_trust_anchor" "x509-spire" {
   enabled = true
   source {
     source_data {
-      x509_certificate_data = var.root-CA
+      x509_certificate_data = file(var.root-CA)
     }
     source_type = "CERTIFICATE_BUNDLE"
   }

@@ -20,5 +20,5 @@ variable "auth-type" {
 }
 
 variable "root-CA" {
-  default = "ROOT_CA"
+  default = "root.pem"
 }
