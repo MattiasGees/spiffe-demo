@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.23.4 as builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.23.4 AS builder
 
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
@@ -39,5 +39,6 @@ USER 1001
 COPY --from=builder /workspace/bin/spiffe-demo /usr/bin/spiffe-demo
 COPY --from=tools-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=tools-builder /spiffe-aws-assume-role /usr/bin/spiffe-aws-assume-role
+COPY --from=ghcr.io/spiffe/aws-spiffe-workload-helper:latest /ko-app/cmd /usr/bin/aws-spiffe-workload-helper
 
 ENTRYPOINT ["/usr/bin/spiffe-demo"]
