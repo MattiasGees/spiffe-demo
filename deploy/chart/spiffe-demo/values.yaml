@@ -17,7 +17,10 @@ spiffeApp:
 initContainer:
   imageName: mattiasgees/spiffe-demo-init
   imageTag: latest
-  awsRoleArn: arn:aws:iam::228615251467:role/demo-spiffe-role
+  awsRoleArn: AWS_ROLE_ARN
+  awsTrustAnchorArn: AWS_TRUST_ANCHOR_ARN
+  awsProfileArn: AWS_PROFILE_ARN
+  awsAuth: AWS_AUTH
   JWTAudience: demo
 
 spiffeGcpProxy:

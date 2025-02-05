@@ -102,7 +102,7 @@ export GCP_PROJECT_NUMBER=11111111
 sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g" deploy/spire/values.yaml
 sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g; s/JWT/$AWS_AUTH/g" deploy/terraform/aws/variables.tf
 sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g; s/GCP_PROJECT_NAME/$GCP_PROJECT_NAME/g" deploy/terraform/google/variables.tf
-sed -i '' "s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g; s/GCP_PROJECT_NAME/$GCP_PROJECT_NAME/g; s/GCP_PROJECT_NUMBER/$GCP_PROJECT_NUMBER/g; s/DEMO_HOSTNAME/$DEMO_HOSTNAME/g; s/DEMO_ROGUE_HOSTNAME/$DEMO_ROGUE_HOSTNAME/g" deploy/chart/spiffe-demo/values.yaml
+sed -i '' "s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g; s/GCP_PROJECT_NAME/$GCP_PROJECT_NAME/g; s/GCP_PROJECT_NUMBER/$GCP_PROJECT_NUMBER/g; s/DEMO_HOSTNAME/$DEMO_HOSTNAME/g; s/DEMO_ROGUE_HOSTNAME/$DEMO_ROGUE_HOSTNAME/g; s/AWS_AUTH/$AWS_AUTH/g" deploy/chart/spiffe-demo/values.yaml
 ```
 
 ### SPIRE
@@ -167,6 +167,8 @@ cd deploy/terraform/aws
 # Change variables.tf to match your environment before running the next command
 terraform init
 terraform apply
+terraform output -json | jq -r '@sh "export AWS_ROLE_ARN=\(.role_arn.value)\nexport AWS_TRUST_ANCHOR_ARN=\(.trust_anchor_arn.value)\nexport AWS_PROFILE_ARN=\(.profile_arn.value)"' >env.sh
+source env.sh
 ```
 
 #### Google Cloud
@@ -185,6 +187,7 @@ terraform apply
 Take a look `deploy/chart/spiffe-demo/values.yaml` to verify it matches your environment and after that do a Helm install.
 
 ```bash
+sed -i '' "s/AWS_ROLE_ARN/$AWS_ROLE_ARN/g; s/AWS_TRUST_ANCHOR_ARN/$AWS_TRUST_ANCHOR_ARN/g; s/AWS_PROFILE_ARN/$AWS_PROFILE_ARN/g" deploy/chart/spiffe-demo/values.yaml
 helm upgrade --install -n spiffe-demo2 spife-demo ./deploy/chart/spiffe-demo --create-namespace
 ```
 
