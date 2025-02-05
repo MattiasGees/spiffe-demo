@@ -83,6 +83,8 @@ To be able to run this demo, there are a few prerequisites
 
 The AWS and Google Cloud bits are optional. When you deploy the `spiffe-demo` application on your Kubernetes cluster, it will deploy everything but off-course if you haven't done the cloud provider setup those specific bits will not work.
 
+For AWS, you can also decide to either use JWT (OIDC Federation) or X.509 (AWS IAM Anywhere) authentication. The default is AWS, If you wish to use X.509, change the value of the environment variable `AWS_AUTH` to `X509`.
+
 ### Prepare environment
 
 Some values are going to be specific to your environment. We are going to prepare these now:
@@ -92,12 +94,13 @@ export DEMO_HOSTNAME=demo.yourdomain.com
 export DEMO_ROGUE_HOSTNAME=demo-rogue.yourdomain.com
 export OIDC_HOSTNAME=oidc.yourdomain.com
 export AWS_BUCKET_NAME=myrandombucketname
+export AWS_AUTH=JWT
 export GCP_BUCKET_NAME=mygcpbucketname
 export GCP_PROJECT_NAME=my-gcp-project-name
 export GCP_PROJECT_NUMBER=11111111
 
 sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g" deploy/spire/values.yaml
-sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g" deploy/terraform/aws/variables.tf
+sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g; s/JWT/$AWS_AUTH/g" deploy/terraform/aws/variables.tf
 sed -i '' "s/OIDC_HOSTNAME/$OIDC_HOSTNAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g; s/GCP_PROJECT_NAME/$GCP_PROJECT_NAME/g" deploy/terraform/google/variables.tf
 sed -i '' "s/AWS_BUCKET_NAME/$AWS_BUCKET_NAME/g; s/GCP_BUCKET_NAME/$GCP_BUCKET_NAME/g; s/GCP_PROJECT_NAME/$GCP_PROJECT_NAME/g; s/GCP_PROJECT_NUMBER/$GCP_PROJECT_NUMBER/g; s/DEMO_HOSTNAME/$DEMO_HOSTNAME/g; s/DEMO_ROGUE_HOSTNAME/$DEMO_ROGUE_HOSTNAME/g" deploy/chart/spiffe-demo/values.yaml
 ```
@@ -117,6 +120,47 @@ helm upgrade --install -n spire spire spire -f ./deploy/spire/values.yaml --repo
 #### AWS
 
 Make sure you have access to an AWS account through the CLI, Terraform will use the same method to create the necessary resources. Take a look at `deploy/terraform/aws/variables.tf` to verify the expected environment specific values.
+
+##### X509
+
+If you have set the environemnt variable `AWS_AUTH` to `X509` earlier, you need to  create a `root.pem` file with the content of your root CA of your SPIRE server in `deploy/terraform/aws`. You can retrieve the root CA the following way:
+
+```bash
+# Create temp pod
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: spire-tools
+  name: spire-tools
+  namespace: default
+spec:
+  containers:
+  - image: mattiasgees/spire-tools:latest
+    imagePullPolicy: Always
+    name: spire-tools
+    resources: {}
+    volumeMounts:
+    - mountPath: /spiffe-workload-api
+      name: spiffe-workload-api
+      readOnly: true
+  volumes:
+  - csi:
+      driver: csi.spiffe.io
+      readOnly: true
+    name: spiffe-workload-api
+EOF
+
+# Get root.pem
+kubectl exec -it spire-tools -- sh -c 'spire-agent api fetch -socketPath /spiffe-workload-api/socket -output json | jq -r ".svids[0].bundle" | awk "BEGIN {print \"-----BEGIN CERTIFICATE-----\"} {print} END {print \"-----END CERTIFICATE-----\"}" | fold -w 64 > /tmp/root.pem && cat /tmp/root.pem' > deploy/terraform/aws/root.pem
+
+# Delete temp pod 
+kubectl delete pod spire-tools
+
+```
+
+##### Deploy
 
 ```bash
 cd deploy/terraform/aws
