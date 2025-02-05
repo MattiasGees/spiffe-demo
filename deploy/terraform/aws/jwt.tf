@@ -5,18 +5,18 @@ data "tls_certificate" "oidc-certificate" {
 
 resource "aws_iam_openid_connect_provider" "oidc-spire" {
   count = var.auth-type == "JWT" ? 1 : 0
-  url = "https://${var.oidc-url}"
+  url   = "https://${var.oidc-url}"
 
   client_id_list = [
     "demo",
   ]
 
-  thumbprint_list = [data.tls_certificate.oidc-certificate.certificates[0].sha1_fingerprint]
+  thumbprint_list = [data.tls_certificate.oidc-certificate[0].certificates[0].sha1_fingerprint]
 }
 
 resource "aws_iam_role" "oidc-spire-role" {
   count = var.auth-type == "JWT" ? 1 : 0
-  name = "demo-spiffe-role"
+  name  = "demo-spiffe-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -25,7 +25,7 @@ resource "aws_iam_role" "oidc-spire-role" {
         Action = "sts:AssumeRoleWithWebIdentity",
         Effect = "Allow",
         Principal = {
-          Federated = aws_iam_openid_connect_provider.oidc-spire.arn,
+          Federated = aws_iam_openid_connect_provider.oidc-spire[0].arn,
         },
         Condition = {
           StringEquals = {

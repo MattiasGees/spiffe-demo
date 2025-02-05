@@ -22,7 +22,7 @@ resource "aws_s3_bucket" "oidc-test" {
 
 resource "aws_iam_role_policy" "s3" {
   name = "demo-spiffe-policy"
-  role = var.auth-type == "JWT" ? aws_iam_role.oidc-spire-role.name : aws_iam_role.x509-spire.name
+  role = var.auth-type == "JWT" ? aws_iam_role.oidc-spire-role[0].name : aws_iam_role.x509-spire-role[0].name
 
   policy = <<EOF
 {

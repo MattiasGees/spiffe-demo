@@ -16,7 +16,7 @@ variable "aws-region" {
 
 variable "auth-type" {
   description = "Authentication type to use either pick JWT or X509"
-  default = "JWT"
+  default     = "JWT"
 }
 
 variable "root-CA" {
