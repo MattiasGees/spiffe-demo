@@ -39,6 +39,6 @@ USER 1001
 COPY --from=builder /workspace/bin/spiffe-demo /usr/bin/spiffe-demo
 COPY --from=tools-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=tools-builder /spiffe-aws-assume-role /usr/bin/spiffe-aws-assume-role
-COPY --from=ghcr.io/spiffe/aws-spiffe-workload-helper:latest /ko-app/cmd /usr/bin/aws-spiffe-workload-helper
+COPY --from=ghcr.io/spiffe/aws-spiffe-workload-helper:0.0.1-rc.7 /ko-app/cmd /usr/bin/aws-spiffe-workload-helper
 
 ENTRYPOINT ["/usr/bin/spiffe-demo"]
