@@ -7,10 +7,6 @@ terraform {
   }
 }
 
-data "tls_certificate" "oidc-certificate" {
-  url = "https://${var.oidc-url}"
-}
-
 provider "aws" {
   region = var.aws-region
 }
@@ -24,42 +20,9 @@ resource "aws_s3_bucket" "oidc-test" {
   }
 }
 
-resource "aws_iam_openid_connect_provider" "oidc-spire" {
-  url = "https://${var.oidc-url}"
-
-  client_id_list = [
-    "demo",
-  ]
-
-  thumbprint_list = [data.tls_certificate.oidc-certificate.certificates[0].sha1_fingerprint]
-}
-
-resource "aws_iam_role" "oidc-spire-role" {
-  name = "demo-spiffe-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = "sts:AssumeRoleWithWebIdentity",
-        Effect = "Allow",
-        Principal = {
-          Federated = aws_iam_openid_connect_provider.oidc-spire.arn,
-        },
-        Condition = {
-          StringEquals = {
-            "${var.oidc-url}:aud" = "demo",
-            "${var.oidc-url}:sub" = "${var.spiffe-id}"
-          }
-        }
-      },
-    ],
-  })
-}
-
 resource "aws_iam_role_policy" "s3" {
   name = "demo-spiffe-policy"
-  role = aws_iam_role.oidc-spire-role.name
+  role = var.auth-type == "JWT" ? aws_iam_role.oidc-spire-role[0].name : aws_iam_role.x509-spire-role[0].name
 
   policy = <<EOF
 {

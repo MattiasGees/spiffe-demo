@@ -29,6 +29,12 @@ spec:
           env:
           - name: AWS_ROLE_ARN
             value: "{{- .Values.initContainer.awsRoleArn -}}"
+          - name: AWS_TRUST_ANCHOR_ARN
+            value: "{{- .Values.initContainer.awsTrustAnchorArn -}}"
+          - name: AWS_PROFILE_ARN
+            value: "{{- .Values.initContainer.awsProfileArn -}}"
+          - name: AWS_AUTH
+            value: "{{- .Values.initContainer.awsAuth -}}"
           - name: JWT_AUDIENCE
             value: "{{- .Values.initContainer.JWTAudience -}}"
           - name: SPIFFE_ENDPOINT_SOCKET

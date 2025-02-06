@@ -22,6 +22,7 @@ go.work
 
 # Certs folders
 certs
+root.pem
 
 # Compiled binary
 /spiffe-demo
@@ -32,3 +33,6 @@ certs
 .terraform.lock.hcl
 terraform.tfstate
 terraform.tfstate.backup
+
+# Environment variables file
+env.sh
