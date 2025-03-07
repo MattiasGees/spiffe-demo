@@ -6,9 +6,19 @@ on:
     pull_request:
         branches: [ "main" ]
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
   docker:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,12 +28,19 @@ jobs:
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
-      - name: Login to Docker Hub
+
+      - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: set lower case owner name
+        run: |
+          echo "REPOSITORY=${REPOSITORY_NN,,}" >>${GITHUB_ENV}
+        env:
+          REPOSITORY_NN: '${{ github.repository }}'
 
       - name: Build and push spiffe-postgres
         uses: docker/build-push-action@v6
@@ -31,4 +48,4 @@ jobs:
             platforms: linux/amd64,linux/arm64
             push: true
             context: ./deploy/postgresql
-            tags: mattiasgees/spiffe-postgres:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
+            tags: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/spiffe-postgres:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}

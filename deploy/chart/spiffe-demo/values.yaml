@@ -1,5 +1,5 @@
 postgresql:
-  imageName: mattiasgees/spiffe-postgres
+  imageName: ghcr.io/mattiasgees/spiffe-demo/spiffe-postgres
   imageTag: latest
 
 spiffe:
@@ -7,15 +7,15 @@ spiffe:
   trustdomain: spire.internal.mattiasgees.be
 
 spiffeHelper:
-  imageName:  mattiasgees/spiffe-helper
+  imageName:  ghcr.io/mattiasgees/spiffe-demo/spiffe-helper
   imageTag: latest
 
 spiffeApp:
-  imageName: mattiasgees/spiffe-demo
+  imageName: ghcr.io/mattiasgees/spiffe-demo/spiffe-demo
   imageTag: latest
 
 initContainer:
-  imageName: mattiasgees/spiffe-demo-init
+  imageName: ghcr.io/mattiasgees/spiffe-demo/spiffe-demo-init
   imageTag: latest
   awsRoleArn: AWS_ROLE_ARN
   awsTrustAnchorArn: AWS_TRUST_ANCHOR_ARN
@@ -24,7 +24,7 @@ initContainer:
   JWTAudience: demo
 
 spiffeGcpProxy:
-  imageName: mattiasgees/spiffe-gcp-proxy
+  imageName: ghcr.io/mattiasgees/spiffe-demo/spiffe-gcp-proxy
   imageTag: latest
   gcpProjectName: GCP_PROJECT_NAME
   gcpProjectNumber: "GCP_PROJECT_NUMBER"
