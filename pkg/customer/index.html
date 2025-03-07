@@ -3,39 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPIFFE action</title>
+    <title>SPIFFE Action</title>
     <style>
-        .response {
-            margin-top: 20px;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .response div {
-            margin-bottom: 10px;
+        h1 {
+            color: #333;
+        }
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .response-container {
+            width: 100%;
+            max-width: 800px;
+        }
+        .response {
+            margin-top: 10px;
             padding: 10px;
             border: 1px solid #ddd;
-            background-color: #f9f9f9;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
     <h1>Click a button to start an action</h1>
-    <button onclick="makeRequest('/mtls', 'response1')">SPIFFE Native mTLS</button>
-    <button onclick="makeRequest('/httpbackend', 'response2')">SPIFFE with Envoy and an HTTP backend</button>
-    <button onclick="makeRequest('/aws/put', 'response3')">Write a file to S3 bucket</button>
-    <button onclick="makeRequest('/aws', 'response4')">Retrieve a file from S3 bucket</button>
-    <button onclick="makeRequest('/gcp/put', 'response7')">Write a file to GCS bucket</button>
-    <button onclick="makeRequest('/gcp', 'response8')">Retrieve a file from GCS bucket</button>
-    <button onclick="makeRequest('/postgresql/put', 'response5')">Write to PostgreSQL</button>
-    <button onclick="makeRequest('/postgresql', 'response6')">Retrieve from PostgreSQL</button>
-
-    <div class="response" id="response1"></div>
-    <div class="response" id="response2"></div>
-    <div class="response" id="response3"></div>
-    <div class="response" id="response4"></div>
-    <div class="response" id="response5"></div>
-    <div class="response" id="response6"></div>
-    <div class="response" id="response7"></div>
-    <div class="response" id="response8"></div>
-
+    <div class="button-container">
+        <button onclick="makeRequest('/mtls', 'response1')">SPIFFE Native mTLS</button>
+        <button onclick="makeRequest('/httpbackend', 'response2')">SPIFFE with Envoy and an HTTP backend</button>
+        <button onclick="makeRequest('/aws/put', 'response3')">Write a file to S3 bucket</button>
+        <button onclick="makeRequest('/aws', 'response4')">Retrieve a file from S3 bucket</button>
+        <button onclick="makeRequest('/gcp/put', 'response5')">Write a file to GCS bucket</button>
+        <button onclick="makeRequest('/gcp', 'response6')">Retrieve a file from GCS bucket</button>
+        <button onclick="makeRequest('/postgresql/put', 'response7')">Write to PostgreSQL</button>
+        <button onclick="makeRequest('/postgresql', 'response8')">Retrieve from PostgreSQL</button>
+    </div>
+    <div class="response-container">
+        <div class="response" id="response1"></div>
+        <div class="response" id="response2"></div>
+        <div class="response" id="response3"></div>
+        <div class="response" id="response4"></div>
+        <div class="response" id="response5"></div>
+        <div class="response" id="response6"></div>
+        <div class="response" id="response7"></div>
+        <div class="response" id="response8"></div>
+    </div>
     <script>
         function makeRequest(subpath, responseId) {
             const url = window.location.origin + subpath;
