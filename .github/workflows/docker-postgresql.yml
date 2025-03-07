@@ -36,10 +36,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: set lower case owner name
+        run: |
+          echo "REPOSITORY=${REPOSITORY_NN,,}" >>${GITHUB_ENV}
+        env:
+          REPOSITORY_NN: '${{ github.repository }}'
+
       - name: Build and push spiffe-postgres
         uses: docker/build-push-action@v6
         with:
             platforms: linux/amd64,linux/arm64
             push: true
             context: ./deploy/postgresql
-            tags: ${{ env.REGISTRY }}/${{ github.repository }}/spiffe-postgres:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
+            tags: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/spiffe-postgres:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
