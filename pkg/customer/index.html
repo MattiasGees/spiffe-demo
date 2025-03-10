@@ -49,6 +49,10 @@
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+        .response-description {
+            font-weight: bold;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -64,13 +68,21 @@
         <button onclick="makeRequest('/postgresql', 'response8')">Retrieve from PostgreSQL</button>
     </div>
     <div class="response-container">
+        <div class="response-description">Response for SPIFFE Native mTLS:</div>
         <div class="response" id="response1"></div>
+        <div class="response-description">Response for SPIFFE with Envoy and an HTTP backend:</div>
         <div class="response" id="response2"></div>
+        <div class="response-description">Response for writing a file to S3 bucket:</div>
         <div class="response" id="response3"></div>
+        <div class="response-description">Response for retrieving a file from S3 bucket:</div>
         <div class="response" id="response4"></div>
+        <div class="response-description">Response for writing a file to GCS bucket:</div>
         <div class="response" id="response5"></div>
+        <div class="response-description">Response for retrieving a file from GCS bucket:</div>
         <div class="response" id="response6"></div>
+        <div class="response-description">Response for writing to PostgreSQL:</div>
         <div class="response" id="response7"></div>
+        <div class="response-description">Response for retrieving from PostgreSQL:</div>
         <div class="response" id="response8"></div>
     </div>
     <script>
