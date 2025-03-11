@@ -3,7 +3,7 @@ module github.com/mattiasgees/spiffe-demo
 go 1.23.4
 
 require (
-	cloud.google.com/go/storage v1.47.0
+	cloud.google.com/go/storage v1.50.0
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/spf13/cobra v1.8.1
