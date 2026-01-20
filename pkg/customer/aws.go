@@ -17,39 +17,41 @@ package customer
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // Retrieves a file from S3 and shows that file to the customer
 func (c *CustomerService) awsRetrievalHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the AWS Retrieval Handler from %s", r.RemoteAddr)
 
-	// Setup a session to AWS.
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(c.awsRegion),
-	})
+	ctx := context.Background()
+
+	// Load AWS configuration with the specified region.
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(c.awsRegion))
 	if err != nil {
-		http.Error(w, "Failed to create session", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to load AWS config: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Create a new S3 instance.
-	svc := s3.New(sess)
+	// Create a new S3 client.
+	client := s3.NewFromConfig(cfg)
+
 	// Retrieve a file from S3
-	resp, err := svc.GetObject(&s3.GetObjectInput{
+	resp, err := client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(c.s3Bucket),
 		Key:    aws.String(c.s3Filepath),
 	})
 	if err != nil {
-		http.Error(w, "Failed to get object", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to get object: %v", err), http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -82,24 +84,22 @@ func (c *CustomerService) awsRetrievalHandler(w http.ResponseWriter, r *http.Req
 // Writes a file to S3 and shows the success to the customer
 func (c *CustomerService) awsPutHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling a request in the AWS Put Handler from %s", r.RemoteAddr)
-	verbose := true
 
-	// Setup a session to AWS.
-	sess, err := session.NewSession(&aws.Config{
-		Region:                        aws.String(c.awsRegion),
-		CredentialsChainVerboseErrors: &verbose,
-	})
+	ctx := context.Background()
+
+	// Load AWS configuration with the specified region.
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(c.awsRegion))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to create session, %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to load AWS config: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Create a new S3 instance.
-	svc := s3.New(sess)
+	// Create a new S3 client.
+	client := s3.NewFromConfig(cfg)
 	reader := bytes.NewReader([]byte("This is a test to write to an S3 bucket"))
 
 	// Write a file to S3
-	result, err := svc.PutObject(&s3.PutObjectInput{
+	result, err := client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(c.s3Bucket),
 		Key:    aws.String(c.s3Filepath),
 		Body:   reader,
@@ -111,5 +111,5 @@ func (c *CustomerService) awsPutHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Tell the customer we have uploaded a file to S3 and add some information to where on S3 we have uploaded it.
 	fmt.Fprintf(w, "Successfully uploaded %q to %q\n", c.s3Filepath, c.s3Bucket)
-	fmt.Fprintf(w, "The uploaded content is: %s", result)
+	fmt.Fprintf(w, "The uploaded content is: %v", result)
 }
