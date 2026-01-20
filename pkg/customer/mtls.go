@@ -52,7 +52,11 @@ func mTLSCall(w http.ResponseWriter, spiffeAuthZ string, backendAddress string) 
 	defer source.Close()
 
 	// Allowed SPIFFE ID
-	serverID := spiffeid.RequireFromString(spiffeAuthZ)
+	serverID, err := spiffeid.FromString(spiffeAuthZ)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid SPIFFE ID configuration: %v", err), http.StatusInternalServerError)
+		return
+	}
 
 	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID.
 	tlsConfig := tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeID(serverID))
