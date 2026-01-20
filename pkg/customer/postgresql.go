@@ -84,7 +84,8 @@ func (c *CustomerService) postgreSQLRetrievalHandler(w http.ResponseWriter, r *h
 	// Log errors if we found one when iterating over the rows.
 	err = rows.Err()
 	if err != nil {
-		log.Fatalf("Error iterating rows: %v", err)
+		log.Printf("Error iterating rows: %v", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 }
@@ -151,7 +152,7 @@ func (c *CustomerService) setupPostgreSQLConnection() (*sql.DB, error) {
 	// Parse the PostgreSQL config settings
 	config, err := pgx.ParseConfig(connStr)
 	if err != nil {
-		log.Fatalf("Unable to parse connection string: %v", err)
+		return nil, fmt.Errorf("unable to parse connection string: %v", err)
 	}
 
 	// Set the TLS config to the SPIFFE TLS config that we retrieved earlier from the Workload API.

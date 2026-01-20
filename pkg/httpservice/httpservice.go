@@ -29,11 +29,11 @@ type HTTPService struct {
 
 // Main function that creates the httpbackend server and starts it. This is called from the CLI.
 func StartServer(serverAddress string) {
-	HTTPService := HTTPService{
+	svc := HTTPService{
 		serverAddress: serverAddress,
 	}
 
-	if err := HTTPService.run(); err != nil {
+	if err := svc.run(); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -59,5 +59,7 @@ func (h *HTTPService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	currentTime := time.Now()
 	formattedTime := currentTime.Format("02/01/06 15:04:05")
 	text := fmt.Sprintf("%s: Successfully connected to the HTTP service!!!", formattedTime)
-	_, _ = io.WriteString(w, text)
+	if _, err := io.WriteString(w, text); err != nil {
+		log.Printf("Error writing response: %v", err)
+	}
 }

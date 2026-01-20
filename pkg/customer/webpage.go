@@ -18,6 +18,7 @@ package customer
 import (
 	"embed"
 	"io/fs"
+	"log"
 	"net/http"
 )
 
@@ -33,5 +34,7 @@ func (c *CustomerService) webpageHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	w.Write(data)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: %v", err)
+	}
 }
