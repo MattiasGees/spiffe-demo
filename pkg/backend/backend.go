@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/mattiasgees/spiffe-demo/pkg/common"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
@@ -87,7 +88,7 @@ func (b *BackendService) run(ctx context.Context) error {
 func (b *BackendService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request received from %s", r.RemoteAddr)
 	currentTime := time.Now()
-	formattedTime := currentTime.Format("02/01/06 15:04:05")
+	formattedTime := currentTime.Format(common.TimeFormat)
 	text := fmt.Sprintf("%s: Successfully connected to the backend service!!!", formattedTime)
 	if _, err := io.WriteString(w, text); err != nil {
 		log.Printf("Error writing response: %v", err)
