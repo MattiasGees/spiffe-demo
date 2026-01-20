@@ -26,6 +26,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/mattiasgees/spiffe-demo/pkg/common"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
@@ -84,7 +85,8 @@ func (c *CustomerService) postgreSQLRetrievalHandler(w http.ResponseWriter, r *h
 	// Log errors if we found one when iterating over the rows.
 	err = rows.Err()
 	if err != nil {
-		log.Fatalf("Error iterating rows: %v", err)
+		log.Printf("Error iterating rows: %v", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 }
@@ -111,7 +113,7 @@ func (c *CustomerService) postgreSQLPutHandler(w http.ResponseWriter, r *http.Re
 
 	// Generate the current data and time to insert as extra information into the test_table.
 	currentTime := time.Now()
-	formattedTime := currentTime.Format("02/01/06 15:04:05")
+	formattedTime := currentTime.Format(common.TimeFormat)
 	text := fmt.Sprintf("The time is %s", formattedTime)
 
 	// Execute the PostgreSQL query.
@@ -151,7 +153,7 @@ func (c *CustomerService) setupPostgreSQLConnection() (*sql.DB, error) {
 	// Parse the PostgreSQL config settings
 	config, err := pgx.ParseConfig(connStr)
 	if err != nil {
-		log.Fatalf("Unable to parse connection string: %v", err)
+		return nil, fmt.Errorf("unable to parse connection string: %v", err)
 	}
 
 	// Set the TLS config to the SPIFFE TLS config that we retrieved earlier from the Workload API.

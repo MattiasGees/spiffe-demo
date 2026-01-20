@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/mattiasgees/spiffe-demo/pkg/common"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
@@ -63,7 +64,10 @@ func (b *BackendService) run(ctx context.Context) error {
 	defer source.Close()
 
 	// Allowed SPIFFE ID
-	clientID := spiffeid.RequireFromString(b.spiffeAuthz)
+	clientID, err := spiffeid.FromString(b.spiffeAuthz)
+	if err != nil {
+		return fmt.Errorf("invalid SPIFFE ID configuration: %w", err)
+	}
 
 	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID `spiffe://example.org/client`
 	tlsConfig := tlsconfig.MTLSServerConfig(source, source, tlsconfig.AuthorizeID(clientID))
@@ -84,9 +88,11 @@ func (b *BackendService) run(ctx context.Context) error {
 func (b *BackendService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request received from %s", r.RemoteAddr)
 	currentTime := time.Now()
-	formattedTime := currentTime.Format("02/01/06 15:04:05")
+	formattedTime := currentTime.Format(common.TimeFormat)
 	text := fmt.Sprintf("%s: Successfully connected to the backend service!!!", formattedTime)
-	_, _ = io.WriteString(w, text)
+	if _, err := io.WriteString(w, text); err != nil {
+		log.Printf("Error writing response: %v", err)
+	}
 	requestorSPIFFEID, err := spiffetls.PeerIDFromConnectionState(*r.TLS)
 	if err != nil {
 		log.Printf("Wasn't able to determine the SPIFFE ID of the requestor: %v", err)
