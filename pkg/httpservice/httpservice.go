@@ -21,6 +21,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/mattiasgees/spiffe-demo/pkg/common"
 )
 
 type HTTPService struct {
@@ -57,7 +59,7 @@ func (h *HTTPService) run() error {
 func (h *HTTPService) rootHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request received from %s", r.RemoteAddr)
 	currentTime := time.Now()
-	formattedTime := currentTime.Format("02/01/06 15:04:05")
+	formattedTime := currentTime.Format(common.TimeFormat)
 	text := fmt.Sprintf("%s: Successfully connected to the HTTP service!!!", formattedTime)
 	_, _ = io.WriteString(w, text)
 }

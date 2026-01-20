@@ -26,6 +26,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
+	"github.com/mattiasgees/spiffe-demo/pkg/common"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
@@ -111,7 +112,7 @@ func (c *CustomerService) postgreSQLPutHandler(w http.ResponseWriter, r *http.Re
 
 	// Generate the current data and time to insert as extra information into the test_table.
 	currentTime := time.Now()
-	formattedTime := currentTime.Format("02/01/06 15:04:05")
+	formattedTime := currentTime.Format(common.TimeFormat)
 	text := fmt.Sprintf("The time is %s", formattedTime)
 
 	// Execute the PostgreSQL query.
