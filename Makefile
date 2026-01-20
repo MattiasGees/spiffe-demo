@@ -1,6 +1,10 @@
 .DEFAULT_GOAL := build
 
 IMAGE_NAME ?= mattiasgees/spiffe-demo:latest
+
+.PHONY: test
+test:
+	go test -v ./...
 INIT_IMAGE_NAME ?= mattiasgees/spiffe-demo-init:latest
 POSTGRES_IMAGE_NAME ?= mattiasgees/spiffe-postgres:latest
 SPFFE_HELPER_IMAGE_NAME ?= mattiasgees/spiffe-helper:latest
