@@ -7,8 +7,8 @@ spiffe:
   trustdomain: spire.internal.mattiasgees.be
 
 spiffeHelper:
-  imageName:  ghcr.io/mattiasgees/spiffe-demo/spiffe-helper
-  imageTag: latest
+  imageName: ghcr.io/spiffe/spiffe-helper
+  imageTag: "0.11.0"
 
 spiffeApp:
   imageName: ghcr.io/mattiasgees/spiffe-demo/spiffe-demo
