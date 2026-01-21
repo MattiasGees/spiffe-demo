@@ -131,19 +131,38 @@ func (c *CustomerService) postgreSQLPutHandler(w http.ResponseWriter, r *http.Re
 
 }
 
+// setupPostgreSQLConnection establishes a SPIFFE-authenticated connection to PostgreSQL.
+//
+// SPIFFE CONCEPT: Database Authentication with X.509 Certificates
+// This demonstrates using SPIFFE identities for database authentication instead of
+// passwords. PostgreSQL supports certificate-based authentication where the client
+// presents an X.509 certificate. By using SPIFFE:
+//   - No passwords to manage, rotate, or accidentally expose
+//   - Identity is cryptographically verifiable
+//   - Automatic certificate rotation via SPIRE
+//   - Database can authorize based on SPIFFE ID (configured in pg_hba.conf)
 func (c *CustomerService) setupPostgreSQLConnection() (*sql.DB, error) {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	// Create a `workloadapi.X509Source`, it will connect to Workload API using provided socket path.
-	// If socket path is not defined using `workloadapi.SourceOption`, value from environment variable `SPIFFE_ENDPOINT_SOCKET` is used.
+	// SPIFFE CONCEPT: X509Source for Database Connections
+	// We obtain our X.509-SVID from SPIRE, just like for service-to-service mTLS.
+	// The certificate's Common Name (CN) or URI SAN contains our SPIFFE ID,
+	// which PostgreSQL can use for authentication and authorization.
 	source, err := workloadapi.NewX509Source(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create X509Source: %v", err)
 	}
 	defer source.Close()
 
+	// SPIFFE CONCEPT: AuthorizeAny() for Database Connections
+	// Here we use AuthorizeAny() instead of AuthorizeID() because PostgreSQL's
+	// certificate might not have a SPIFFE ID (it's not SPIFFE-native).
+	// The database authenticates us via our certificate; we trust the database
+	// based on network policy or the CA that signed its certificate.
+	// In a full SPIFFE deployment, you could use AuthorizeID() if the database
+	// also has a SPIFFE identity.
 	tlsConfig := tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeAny())
 
 	connStr := fmt.Sprintf(
@@ -156,7 +175,11 @@ func (c *CustomerService) setupPostgreSQLConnection() (*sql.DB, error) {
 		return nil, fmt.Errorf("unable to parse connection string: %v", err)
 	}
 
-	// Set the TLS config to the SPIFFE TLS config that we retrieved earlier from the Workload API.
+	// SPIFFE CONCEPT: Injecting SPIFFE TLS Config into Database Driver
+	// Most database drivers allow custom TLS configuration. By setting our
+	// SPIFFE-based TLS config, the database connection automatically uses
+	// our X.509-SVID for authentication. No code changes needed in the
+	// actual database queries - authentication is handled at connection time.
 	config.TLSConfig = tlsConfig
 
 	// Open the connection the PostgreSQL database.
