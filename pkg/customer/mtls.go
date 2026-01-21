@@ -36,14 +36,27 @@ func (c *CustomerService) mtlsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // General mTLS call to SPIFFE enabled servers. This can be either a SPIFFE native application or a webserver/apiserver that is fronted by a SPIFFE proxy like Envoy.
+//
+// SPIFFE CONCEPT: Application-Layer mTLS
+// This demonstrates how an application can use SPIFFE identities directly in code
+// to establish mutually authenticated TLS connections. The go-spiffe library handles
+// all certificate management automatically - no need to deal with certificate files,
+// rotation, or manual TLS configuration.
 func mTLSCall(w http.ResponseWriter, spiffeAuthZ string, backendAddress string) {
 	w.Header().Set("Content-Type", "text/html")
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	// Create a `workloadapi.X509Source`, it will connect to Workload API using provided socket path
-	// If socket path is not defined using `workloadapi.SourceOption`, value from environment variable `SPIFFE_ENDPOINT_SOCKET` is used.
+	// SPIFFE CONCEPT: X509Source and the Workload API
+	// The X509Source automatically connects to the SPIFFE Workload API (typically provided
+	// by SPIRE Agent) via a Unix domain socket. It fetches the workload's X.509-SVID
+	// (SPIFFE Verifiable Identity Document) which contains:
+	//   - The workload's SPIFFE ID in the certificate's URI SAN (e.g., spiffe://example.org/myservice)
+	//   - A private key for proving identity
+	//   - Trust bundles for validating other workloads' certificates
+	// The source automatically handles certificate rotation - when SPIRE rotates the SVID,
+	// the source gets updated transparently.
 	source, err := workloadapi.NewX509Source(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to create X509Source: %v", err), http.StatusInternalServerError)
@@ -51,14 +64,23 @@ func mTLSCall(w http.ResponseWriter, spiffeAuthZ string, backendAddress string) 
 	}
 	defer source.Close()
 
-	// Allowed SPIFFE ID
+	// SPIFFE CONCEPT: SPIFFE ID Authorization
+	// A SPIFFE ID is a URI that uniquely identifies a workload (e.g., spiffe://trust-domain/path).
+	// Here we parse the expected server's SPIFFE ID that we want to connect to.
+	// This implements zero-trust networking: we don't just accept "any valid certificate",
+	// we verify the exact identity we expect to communicate with.
 	serverID, err := spiffeid.FromString(spiffeAuthZ)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid SPIFFE ID configuration: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID.
+	// SPIFFE CONCEPT: mTLS Client Configuration
+	// MTLSClientConfig creates a TLS configuration for mutual TLS:
+	//   - First 'source' parameter: provides our client certificate (X.509-SVID) to present to the server
+	//   - Second 'source' parameter: provides trust bundles to validate the server's certificate
+	//   - AuthorizeID(serverID): only accept connections to servers with this exact SPIFFE ID
+	// This ensures both sides prove their identity - true mutual authentication.
 	tlsConfig := tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeID(serverID))
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -81,7 +103,10 @@ func mTLSCall(w http.ResponseWriter, spiffeAuthZ string, backendAddress string) 
 		return
 	}
 
-	// Retrieve the server SPIFFE ID from the connection.
+	// SPIFFE CONCEPT: Retrieving Peer Identity
+	// After establishing the mTLS connection, we can extract the server's SPIFFE ID
+	// from the TLS connection state. This is useful for logging, auditing, or making
+	// authorization decisions based on the authenticated identity.
 	serverSPIFFEID, err := spiffetls.PeerIDFromConnectionState(*resp.TLS)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Wasn't able to determine the SPIFFE ID of the server: %v", err), http.StatusInternalServerError)
