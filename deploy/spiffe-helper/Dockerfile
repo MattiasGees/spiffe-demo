@@ -8,8 +8,8 @@ ARG TARGETARCH
 # Download & unpack SPIFFE-helper
 RUN apt-get update && apt-get install -y \
     wget 
-RUN wget https://github.com/spiffe/spiffe-helper/releases/download/v0.11.0/spiffe-helper-v0.11.0.tar.gz
-RUN tar zvxf spiffe-helper-v0.11.0.tar.gz
+RUN wget https://github.com/spiffe/spiffe-helper/releases/download/v0.7.0/spiffe-helper-v0.7.0.tar.gz
+RUN tar zvxf spiffe-helper-v0.7.0.tar.gz
 RUN chmod +x spiffe-helper
 
 FROM --platform=${TARGETPLATFORM:-linux/amd64} ubuntu:24.04
