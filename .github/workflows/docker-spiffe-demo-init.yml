@@ -40,11 +40,21 @@ jobs:
           echo "REPOSITORY=${REPOSITORY_NN,,}" >>${GITHUB_ENV}
         env:
           REPOSITORY_NN: '${{ github.repository }}'
-          
+
+      - name: Sanitize branch name for Docker tag
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # Replace / with - and remove any other invalid characters
+            SANITIZED=$(echo "${{ github.head_ref }}" | sed 's/\//-/g' | sed 's/[^a-zA-Z0-9._-]//g')
+          else
+            SANITIZED="latest"
+          fi
+          echo "DOCKER_TAG=${SANITIZED}" >>${GITHUB_ENV}
+
       - name: Build and push spiffe-demo init
         uses: docker/build-push-action@v6
         with:
             platforms: linux/amd64,linux/arm64
             push: true
             context: ./deploy/initcontainer
-            tags: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/spiffe-demo-init:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
+            tags: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/spiffe-demo-init:${{ env.DOCKER_TAG }}
