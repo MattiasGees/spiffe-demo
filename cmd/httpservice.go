@@ -18,6 +18,7 @@ package cmd
 import (
 	"github.com/mattiasgees/spiffe-demo/pkg/httpservice"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // httpserviceCmd represents the httpservice command
@@ -27,8 +28,7 @@ var httpserviceCmd = &cobra.Command{
 	Long: `The point of this demo is that we want to showcase how an HTTP service
 	can be put behind an Envoy proxy and still do zero-trust wih SPIFFE`,
 	Run: func(cmd *cobra.Command, args []string) {
-		httpservice.StartServer(serverAddress)
-
+		httpservice.StartServer(viper.GetString("server.address"))
 	},
 }
 

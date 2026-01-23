@@ -17,20 +17,19 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var (
-	spiffeAuthz   string
-	serverAddress string
-)
+var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "spiffe-demo",
 	Short: "The SPIFFE demo command line utility",
-	Long: `This command line utility will be used to demo different SPIFFE capabilities. 
+	Long: `This command line utility will be used to demo different SPIFFE capabilities.
 	It can be started in different modes to resemble different applications`,
 }
 
@@ -44,8 +43,42 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVarP(&spiffeAuthz, "authorized-spiffe", "a", "", "The SPIFFE Identity that is authorized to talk to/from this service")
-	rootCmd.PersistentFlags().StringVarP(&serverAddress, "server-address", "l", "127.0.0.1:8080", "How do we want to expose our server")
+	// Config file flag
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: ./config.yaml, ~/.spiffe-demo/config.yaml, /etc/spiffe-demo/config.yaml)")
+
+	// Global flags
+	rootCmd.PersistentFlags().StringP("authorized-spiffe", "a", "", "The SPIFFE Identity that is authorized to talk to/from this service")
+	rootCmd.PersistentFlags().StringP("server-address", "l", "127.0.0.1:8080", "How do we want to expose our server")
+
+	// Bind flags to viper
+	viper.BindPFlag("spiffe.authorized_id", rootCmd.PersistentFlags().Lookup("authorized-spiffe"))
+	viper.BindPFlag("server.address", rootCmd.PersistentFlags().Lookup("server-address"))
+}
+
+// initConfig reads in config file and ENV variables if set.
+func initConfig() {
+	if cfgFile != "" {
+		// Use config file from the flag
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Search for config in standard locations
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+		viper.AddConfigPath(".")
+		viper.AddConfigPath("$HOME/.spiffe-demo")
+		viper.AddConfigPath("/etc/spiffe-demo")
+	}
+
+	// Environment variables
+	viper.SetEnvPrefix("SPIFFE_DEMO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+
+	// Set defaults
+	viper.SetDefault("server.address", "127.0.0.1:8080")
+
+	// Read config file if present (not an error if missing)
+	viper.ReadInConfig()
 }

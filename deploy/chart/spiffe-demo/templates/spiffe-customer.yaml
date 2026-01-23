@@ -49,37 +49,22 @@ spec:
               readOnly: true
             - name: aws-config
               mountPath: /tmp/aws
+            - name: app-config
+              mountPath: /etc/spiffe-demo
+              readOnly: true
           args:
           - customer
-          - --authorized-spiffe
-          - "spiffe://{{- .Values.spiffe.trustdomain -}}/ns/{{- .Release.Namespace -}}/sa/{{- include "spiffeDemo.name" . -}}-backend"
-          - --server-address
-          - 0.0.0.0:8080
-          - --backend-service
-          - https://{{ include "spiffeDemo.name" . }}-backend.{{ .Release.Namespace -}}.svc.cluster.local
-          - --aws-region
-          - "{{- .Values.spiffeCustomer.awsRegion -}}"
-          - --s3-bucket
-          - "{{- .Values.spiffeCustomer.s3Bucket -}}"
-          - --authorized-spiffe-httpbackend
-          - "spiffe://{{- .Values.spiffe.trustdomain -}}/ns/{{- .Release.Namespace -}}/sa/{{- include "spiffeDemo.name" . -}}-httpbackend"
-          - --httpbackend-service
-          - https://{{ include "spiffeDemo.name" . }}-httpbackend.{{ .Release.Namespace -}}.svc.cluster.local
-          - --postgresql-host
-          - {{ include "spiffeDemo.name" . }}-postgresql.{{ .Release.Namespace -}}.svc.cluster.local
-          - --postgresql-user
-          - {{ include "spiffeDemo.name" . }}-customer
+          - --config
+          - /etc/spiffe-demo/config.yaml
           env:
           - name: AWS_CONFIG_FILE
             value: "/tmp/aws/config"
           - name: AWS_SDK_LOAD_CONFIG
             value: "1"
+          - name: AWS_REGION
+            value: "{{- .Values.spiffeCustomer.awsRegion -}}"
           - name: SPIFFE_ENDPOINT_SOCKET
             value: "unix://{{- .Values.spiffe.socketPath -}}"
-          - name: SPIFFE_GCP_PROXY_URL
-            value: http://localhost:8081
-          - name: BUCKET_NAME
-            value: "{{- .Values.spiffeCustomer.gcpBucket -}}"
           ports:
           - containerPort: 8080
             name: http
@@ -121,6 +106,9 @@ spec:
       - name: aws-config
         emptyDir:
           medium: Memory
+      - name: app-config
+        configMap:
+          name: {{ include "spiffeDemo.name" . }}-config
 ---
 apiVersion: v1
 kind: Service

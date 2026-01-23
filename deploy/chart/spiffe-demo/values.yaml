@@ -30,9 +30,14 @@ spiffeGcpProxy:
   gcpProjectNumber: "GCP_PROJECT_NUMBER"
 
 spiffeCustomer:
+  # AWS configuration
   awsRegion: eu-west-2
-  s3Bucket: BUCKET_NAME
+  awsBucket: AWS_BUCKET_NAME
+  awsFilePath: testfile
+  # GCP configuration
   gcpBucket: GCP_BUCKET_NAME
+  gcpFilePath: Hello
+  # Ingress configuration
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     kubernetes.io/ingress.class: nginx

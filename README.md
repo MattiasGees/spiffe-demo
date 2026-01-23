@@ -23,7 +23,7 @@ A simple Golang tool to showcase SPIFFE possibilities. It has 3 subcommands:
 
 1. customer
 2. backend
-3. httpbackend
+3. httpservice
 
 The customer is the entry point for customers through an Ingress. It serves a simple webserver that is exposed over an Ingress and shows a page with buttons that allows an end-user to take actions. The following actions can be taken:
 
@@ -68,6 +68,52 @@ Creates a Docker image for the latests version of the [spiffe-gcp-proxy](https:/
 #### Go application
 
 The Golang application gets built with golang through a built container. Afterwards `ca-certificates` and the `spiffe-aws-assume-role` binary get added to it as well.
+
+## Configuration
+
+The application supports multiple configuration methods with the following priority (highest to lowest):
+
+1. Command-line flags
+2. Environment variables (prefixed with `SPIFFE_DEMO_`)
+3. Config file
+4. Defaults
+
+### Config File
+
+You can provide configuration via a YAML file. The application searches for `config.yaml` in:
+- Current directory (`./config.yaml`)
+- User home (`~/.spiffe-demo/config.yaml`)
+- System-wide (`/etc/spiffe-demo/config.yaml`)
+
+Or specify a custom path with `--config /path/to/config.yaml`.
+
+Example config file:
+
+```yaml
+server:
+  address: "0.0.0.0:8080"
+
+spiffe:
+  authorized_id: "spiffe://example.org/backend"
+
+customer:
+  backend:
+    service_url: "https://backend:9090"
+  aws:
+    bucket: "my-s3-bucket"
+    file_path: "testfile"
+  gcp:
+    bucket: "my-gcs-bucket"
+    file_path: "Hello"
+    proxy_url: "http://localhost:8081"
+  postgresql:
+    host: "postgres.local"
+    user: "spiffe_user"
+```
+
+See `config.example.yaml` for a complete example with all options documented.
+
+For a full list of configuration options and their environment variable mappings, see [docs/configuration.md](docs/configuration.md).
 
 ## Setup
 

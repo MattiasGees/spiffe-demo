@@ -18,34 +18,40 @@ package customer
 import (
 	"log"
 	"net/http"
+
+	"github.com/mattiasgees/spiffe-demo/pkg/config"
 )
 
 type CustomerService struct {
 	spiffeAuthz            string
 	serverAddress          string
 	backendService         string
-	s3Bucket               string
-	s3Filepath             string
-	awsRegion              string
+	awsBucket              string
+	awsFilePath          string
 	spiffeAuthzHTTPBackend string
 	HTTPBackendService     string
 	postgreSQLHost         string
 	postgreSQLUser         string
+	gcpBucket              string
+	gcpFilePath          string
+	gcpProxyURL            string
 }
 
 // Main function that creates the customer server and starts it. This is called from the CLI.
-func StartServer(spiffeAuthz, serverAddress, backendService, s3Bucket, s3Filepath, awsRegion, spiffeAuthzHTTPBackend, HTTPBackendService, postgreSQLHost, postgreSQLUser string) {
+func StartServer(spiffeAuthz, serverAddress string, cfg config.CustomerConfig) {
 	customerService := CustomerService{
 		spiffeAuthz:            spiffeAuthz,
 		serverAddress:          serverAddress,
-		backendService:         backendService,
-		s3Bucket:               s3Bucket,
-		s3Filepath:             s3Filepath,
-		awsRegion:              awsRegion,
-		spiffeAuthzHTTPBackend: spiffeAuthzHTTPBackend,
-		HTTPBackendService:     HTTPBackendService,
-		postgreSQLHost:         postgreSQLHost,
-		postgreSQLUser:         postgreSQLUser,
+		backendService:         cfg.Backend.ServiceURL,
+		awsBucket:              cfg.AWS.Bucket,
+		awsFilePath:          cfg.AWS.FilePath,
+		spiffeAuthzHTTPBackend: cfg.HTTPBackend.SpiffeID,
+		HTTPBackendService:     cfg.HTTPBackend.ServiceURL,
+		postgreSQLHost:         cfg.PostgreSQL.Host,
+		postgreSQLUser:         cfg.PostgreSQL.User,
+		gcpBucket:              cfg.GCP.Bucket,
+		gcpFilePath:          cfg.GCP.FilePath,
+		gcpProxyURL:            cfg.GCP.ProxyURL,
 	}
 
 	if err := customerService.run(); err != nil {
@@ -61,8 +67,8 @@ func (c *CustomerService) run() error {
 	http.HandleFunc("/spifferetriever", c.spiffeRetriever)
 	http.HandleFunc("/aws", c.awsRetrievalHandler)
 	http.HandleFunc("/aws/put", c.awsPutHandler)
-	http.HandleFunc("/gcp/put", GCPPutHandler)
-	http.HandleFunc("/gcp", GCPReadHandler)
+	http.HandleFunc("/gcp/put", c.gcpPutHandler)
+	http.HandleFunc("/gcp", c.gcpReadHandler)
 	http.HandleFunc("/httpbackend", c.httpBackendHandler)
 	http.HandleFunc("/postgresql", c.postgreSQLRetrievalHandler)
 	http.HandleFunc("/postgresql/put", c.postgreSQLPutHandler)
