@@ -125,3 +125,51 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.image }}:${{ env.VERSION }}
             ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.image }}:latest
+
+  update-release-notes:
+    name: Update release notes with container images
+    runs-on: ubuntu-latest
+    needs: build-containers
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Set lower case owner name
+        run: |
+          echo "REPOSITORY=${REPOSITORY_NN,,}" >>${GITHUB_ENV}
+        env:
+          REPOSITORY_NN: '${{ github.repository }}'
+
+      - name: Update release notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ github.ref_name }}';
+            const repository = process.env.REPOSITORY;
+            const registry = '${{ env.REGISTRY }}';
+
+            const containerImages = `
+
+            ## Container Images
+
+            \`\`\`
+            docker pull ${registry}/${repository}/spiffe-demo:${version}
+            docker pull ${registry}/${repository}/spiffe-demo-init:${version}
+            docker pull ${registry}/${repository}/spiffe-postgres:${version}
+            docker pull ${registry}/${repository}/spiffe-gcp-proxy:${version}
+            \`\`\`
+            `;
+
+            const { data: release } = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: version
+            });
+
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              body: release.body + containerImages
+            });
