@@ -23,7 +23,7 @@ A simple Golang tool to showcase SPIFFE possibilities. It has 3 subcommands:
 
 1. customer
 2. backend
-3. httpbackend
+3. httpservice
 
 The customer is the entry point for customers through an Ingress. It serves a simple webserver that is exposed over an Ingress and shows a page with buttons that allows an end-user to take actions. The following actions can be taken:
 
