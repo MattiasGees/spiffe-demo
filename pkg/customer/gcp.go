@@ -21,15 +21,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"cloud.google.com/go/storage"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
-)
-
-var (
-	gcpBucketName = os.Getenv("BUCKET_NAME")
 )
 
 type AccessTokenResponse struct {
@@ -38,18 +33,21 @@ type AccessTokenResponse struct {
 	TokenType   string `json:"token_type"`
 }
 
-// GCPPutHandler writes data to a GCS bucket.
-func GCPPutHandler(w http.ResponseWriter, r *http.Request) {
+// gcpPutHandler writes data to a GCS bucket.
+func (c *CustomerService) gcpPutHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	client, err := createGCPStorageClient(ctx)
+	bucketName := c.getGCPBucketName()
+	filePath := c.getGCPFilePath()
+
+	client, err := c.createGCPStorageClient(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create storage client: %v", err), http.StatusInternalServerError)
 		return
 	}
 	defer client.Close()
 
-	obj := client.Bucket(gcpBucketName).Object("Hello")
+	obj := client.Bucket(bucketName).Object(filePath)
 	wc := obj.NewWriter(ctx)
 	if _, err := wc.Write([]byte("world")); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to write to bucket: %v", err), http.StatusInternalServerError)
@@ -60,21 +58,24 @@ func GCPPutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, "Successfully wrote 'world' to 'Hello' in the GCP bucket.")
+	fmt.Fprintf(w, "Successfully wrote 'world' to '%s' in the GCP bucket.", filePath)
 }
 
-// GCPReadHandler reads data from a GCS bucket.
-func GCPReadHandler(w http.ResponseWriter, r *http.Request) {
+// gcpReadHandler reads data from a GCS bucket.
+func (c *CustomerService) gcpReadHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	client, err := createGCPStorageClient(ctx)
+	bucketName := c.getGCPBucketName()
+	filePath := c.getGCPFilePath()
+
+	client, err := c.createGCPStorageClient(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create storage client: %v", err), http.StatusInternalServerError)
 		return
 	}
 	defer client.Close()
 
-	obj := client.Bucket(gcpBucketName).Object("Hello")
+	obj := client.Bucket(bucketName).Object(filePath)
 	rc, err := obj.NewReader(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to read from bucket: %v", err), http.StatusInternalServerError)
@@ -88,12 +89,27 @@ func GCPReadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Content of 'Hello': %s", data)
+	fmt.Fprintf(w, "Content of '%s': %s", filePath, data)
 }
 
-func createGCPStorageClient(ctx context.Context) (*storage.Client, error) {
+// getGCPBucketName returns the GCP bucket name.
+func (c *CustomerService) getGCPBucketName() string {
+	return c.gcpBucket
+}
+
+// getGCPFilePath returns the GCP file path.
+func (c *CustomerService) getGCPFilePath() string {
+	return c.gcpFilePath
+}
+
+// getGCPProxyURL returns the GCP proxy URL.
+func (c *CustomerService) getGCPProxyURL() string {
+	return c.gcpProxyURL
+}
+
+func (c *CustomerService) createGCPStorageClient(ctx context.Context) (*storage.Client, error) {
 	// Call the spiffe-gcp-proxy to get the access token
-	accessToken, err := getGCPAccessTokenFromProxy(ctx)
+	accessToken, err := c.getGCPAccessTokenFromProxy(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get access token from proxy: %v", err)
 	}
@@ -111,15 +127,11 @@ func createGCPStorageClient(ctx context.Context) (*storage.Client, error) {
 	return client, nil
 }
 
-func getGCPAccessTokenFromProxy(ctx context.Context) (string, error) {
-	// Get the proxy URL from an environment variable (default to localhost:8080)
-	GCPproxyURL := os.Getenv("SPIFFE_GCP_PROXY_URL")
-	if GCPproxyURL == "" {
-		GCPproxyURL = "http://localhost:8080"
-	}
+func (c *CustomerService) getGCPAccessTokenFromProxy(ctx context.Context) (string, error) {
+	proxyURL := c.getGCPProxyURL()
 
 	// Construct the full URL for the token request
-	tokenURL := fmt.Sprintf("%s/computeMetadata/v1/instance/service-accounts/default/token", GCPproxyURL)
+	tokenURL := fmt.Sprintf("%s/computeMetadata/v1/instance/service-accounts/default/token", proxyURL)
 
 	// Request token from spiffe-gcp-proxy
 	req, err := http.NewRequestWithContext(ctx, "GET", tokenURL, nil)

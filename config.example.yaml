@@ -1,0 +1,73 @@
+# SPIFFE Demo Configuration File
+#
+# This file demonstrates all available configuration options.
+# Copy this file to one of the following locations:
+#   - ./config.yaml (current directory)
+#   - ~/.spiffe-demo/config.yaml (user home)
+#   - /etc/spiffe-demo/config.yaml (system-wide)
+#
+# Or specify a custom path with: --config /path/to/config.yaml
+#
+# Configuration priority (highest to lowest):
+#   1. Command-line flags
+#   2. Environment variables (SPIFFE_DEMO_*)
+#   3. Config file
+#   4. Defaults
+
+# Global settings (apply to all services)
+server:
+  # Address to bind the server to
+  # CLI: --server-address, Env: SPIFFE_DEMO_SERVER_ADDRESS
+  address: "0.0.0.0:8080"
+
+spiffe:
+  # SPIFFE ID authorized to communicate with this service
+  # CLI: --authorized-spiffe, Env: SPIFFE_DEMO_SPIFFE_AUTHORIZED_ID
+  authorized_id: "spiffe://example.org/backend"
+
+# Customer service specific settings
+customer:
+  backend:
+    # URL of the SPIFFE-native backend service
+    # CLI: --backend-service, Env: SPIFFE_DEMO_CUSTOMER_BACKEND_SERVICE_URL
+    service_url: "https://backend:9090"
+
+  http_backend:
+    # URL of the HTTP backend service (fronted by Envoy)
+    # CLI: --httpbackend-service, Env: SPIFFE_DEMO_CUSTOMER_HTTP_BACKEND_SERVICE_URL
+    service_url: "https://httpbackend:8080"
+    # SPIFFE ID of the HTTP backend service
+    # CLI: --authorized-spiffe-httpbackend, Env: SPIFFE_DEMO_CUSTOMER_HTTP_BACKEND_SPIFFE_ID
+    spiffe_id: "spiffe://example.org/httpservice"
+
+  aws:
+    # AWS S3 bucket name
+    # CLI: --aws-bucket, Env: SPIFFE_DEMO_CUSTOMER_AWS_BUCKET
+    bucket: "my-s3-bucket"
+    # Path/key within the S3 bucket
+    # CLI: --aws-file-path, Env: SPIFFE_DEMO_CUSTOMER_AWS_FILE_PATH
+    file_path: "testfile"
+    # Note: AWS region is NOT configured here.
+    # Use standard AWS environment variables: AWS_REGION or AWS_DEFAULT_REGION
+
+  gcp:
+    # GCP GCS bucket name
+    # CLI: --gcp-bucket, Env: SPIFFE_DEMO_CUSTOMER_GCP_BUCKET
+    bucket: "my-gcs-bucket"
+    # Path/key within the GCS bucket
+    # CLI: --gcp-file-path, Env: SPIFFE_DEMO_CUSTOMER_GCP_FILE_PATH
+    file_path: "Hello"
+    # URL of the spiffe-gcp-proxy sidecar
+    # CLI: --gcp-proxy-url, Env: SPIFFE_DEMO_CUSTOMER_GCP_PROXY_URL
+    proxy_url: "http://localhost:8081"
+
+  postgresql:
+    # PostgreSQL server hostname
+    # CLI: --postgresql-host, Env: SPIFFE_DEMO_CUSTOMER_POSTGRESQL_HOST
+    host: "postgres.local"
+    # PostgreSQL username
+    # CLI: --postgresql-user, Env: SPIFFE_DEMO_CUSTOMER_POSTGRESQL_USER
+    user: "spiffe_user"
+
+# Backend and httpservice commands use only the global settings above
+# (server.address and spiffe.authorized_id)

@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "spiffeDemo.name" . }}-config
+data:
+  config.yaml: |
+    server:
+      address: "0.0.0.0:8080"
+
+    spiffe:
+      authorized_id: "spiffe://{{- .Values.spiffe.trustdomain -}}/ns/{{- .Release.Namespace -}}/sa/{{- include "spiffeDemo.name" . -}}-backend"
+
+    customer:
+      backend:
+        service_url: "https://{{ include "spiffeDemo.name" . }}-backend.{{ .Release.Namespace -}}.svc.cluster.local"
+
+      http_backend:
+        service_url: "https://{{ include "spiffeDemo.name" . }}-httpbackend.{{ .Release.Namespace -}}.svc.cluster.local"
+        spiffe_id: "spiffe://{{- .Values.spiffe.trustdomain -}}/ns/{{- .Release.Namespace -}}/sa/{{- include "spiffeDemo.name" . -}}-httpbackend"
+
+      aws:
+        bucket: "{{- .Values.spiffeCustomer.awsBucket -}}"
+        file_path: "{{- .Values.spiffeCustomer.awsFilePath | default "testfile" -}}"
+
+      gcp:
+        bucket: "{{- .Values.spiffeCustomer.gcpBucket -}}"
+        file_path: "{{- .Values.spiffeCustomer.gcpFilePath | default "Hello" -}}"
+        proxy_url: "http://localhost:8081"
+
+      postgresql:
+        host: "{{ include "spiffeDemo.name" . }}-postgresql.{{ .Release.Namespace -}}.svc.cluster.local"
+        user: "{{ include "spiffeDemo.name" . }}-customer"

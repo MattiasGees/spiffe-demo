@@ -18,6 +18,7 @@ package cmd
 import (
 	"github.com/mattiasgees/spiffe-demo/pkg/backend"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var backendCmd = &cobra.Command{
@@ -26,7 +27,10 @@ var backendCmd = &cobra.Command{
 	Long: `This starts a simple backend service that will be exposes as an mTLS SPIFFE Service.
 	It will validate incoming requests based on a SPIFFE identity`,
 	Run: func(cmd *cobra.Command, args []string) {
-		backend.StartServer(spiffeAuthz, serverAddress)
+		backend.StartServer(
+			viper.GetString("spiffe.authorized_id"),
+			viper.GetString("server.address"),
+		)
 	},
 }
 

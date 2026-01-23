@@ -35,8 +35,9 @@ func (c *CustomerService) awsRetrievalHandler(w http.ResponseWriter, r *http.Req
 
 	ctx := context.Background()
 
-	// Load AWS configuration with the specified region.
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(c.awsRegion))
+	// Load AWS configuration.
+	// Region is determined by AWS SDK from environment (AWS_REGION or AWS_DEFAULT_REGION).
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to load AWS config: %v", err), http.StatusInternalServerError)
 		return
@@ -47,8 +48,8 @@ func (c *CustomerService) awsRetrievalHandler(w http.ResponseWriter, r *http.Req
 
 	// Retrieve a file from S3
 	resp, err := client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(c.s3Bucket),
-		Key:    aws.String(c.s3Filepath),
+		Bucket: aws.String(c.awsBucket),
+		Key:    aws.String(c.awsFilePath),
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to get object: %v", err), http.StatusInternalServerError)
@@ -87,8 +88,9 @@ func (c *CustomerService) awsPutHandler(w http.ResponseWriter, r *http.Request) 
 
 	ctx := context.Background()
 
-	// Load AWS configuration with the specified region.
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(c.awsRegion))
+	// Load AWS configuration.
+	// Region is determined by AWS SDK from environment (AWS_REGION or AWS_DEFAULT_REGION).
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to load AWS config: %v", err), http.StatusInternalServerError)
 		return
@@ -100,16 +102,16 @@ func (c *CustomerService) awsPutHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Write a file to S3
 	result, err := client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(c.s3Bucket),
-		Key:    aws.String(c.s3Filepath),
+		Bucket: aws.String(c.awsBucket),
+		Key:    aws.String(c.awsFilePath),
 		Body:   reader,
 	})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Unable to upload %q to %q, %v", c.s3Filepath, c.s3Bucket, err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Unable to upload %q to %q, %v", c.awsFilePath, c.awsBucket, err), http.StatusInternalServerError)
 		return
 	}
 
 	// Tell the customer we have uploaded a file to S3 and add some information to where on S3 we have uploaded it.
-	fmt.Fprintf(w, "Successfully uploaded %q to %q\n", c.s3Filepath, c.s3Bucket)
+	fmt.Fprintf(w, "Successfully uploaded %q to %q\n", c.awsFilePath, c.awsBucket)
 	fmt.Fprintf(w, "The uploaded content is: %v", result)
 }
