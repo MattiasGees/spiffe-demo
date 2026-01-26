@@ -22,6 +22,7 @@ import (
 	"github.com/mattiasgees/spiffe-demo/pkg/ledger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
 
 var ledgerCmd = &cobra.Command{
@@ -32,6 +33,10 @@ var ledgerCmd = &cobra.Command{
 It exposes REST endpoints for managing accounts and transfers, secured with
 SPIFFE mTLS authentication. Only clients with authorized SPIFFE IDs can connect.
 
+The service uses SPIFFE X.509-SVIDs for:
+  - Server mTLS authentication (incoming client connections)
+  - PostgreSQL client authentication (database connections)
+
 Endpoints:
   GET  /api/accounts         - List all accounts with balances
   GET  /api/accounts/{id}    - Get a specific account
@@ -40,6 +45,8 @@ Endpoints:
   GET  /api/transactions/{id} - Get a specific transaction
   GET  /health               - Health check endpoint`,
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := context.Background()
+
 		// Get configuration
 		serverAddress := viper.GetString("server.address")
 		spiffeAuthz := viper.GetString("spiffe.authorized_id")
@@ -52,19 +59,33 @@ Endpoints:
 			log.Println("Using mock store (in-memory)")
 			store = ledger.NewMockStore()
 		} else {
-			// Use PostgreSQL store
+			// SPIFFE CONCEPT: Unified Identity for All Connections
+			// The X509Source provides the service's SPIFFE identity which is used for:
+			// 1. mTLS server authentication (clients connecting to this service)
+			// 2. mTLS client authentication (this service connecting to PostgreSQL)
+			// This demonstrates how a single SPIFFE identity can secure multiple
+			// connection types without managing separate certificates.
+			source, err := workloadapi.NewX509Source(ctx)
+			if err != nil {
+				log.Fatalf("Failed to create X509Source: %v", err)
+			}
+			defer source.Close()
+
+			svid, err := source.GetX509SVID()
+			if err != nil {
+				log.Fatalf("Failed to get X509-SVID: %v", err)
+			}
+			log.Printf("Using SPIFFE identity: %s", svid.ID.String())
+
+			// Use PostgreSQL store with SPIFFE authentication
 			cfg := ledger.PostgresConfig{
-				Host:        viper.GetString("ledger.postgresql.host"),
-				Port:        viper.GetInt("ledger.postgresql.port"),
-				User:        viper.GetString("ledger.postgresql.user"),
-				Database:    viper.GetString("ledger.postgresql.database"),
-				SSLMode:     viper.GetString("ledger.postgresql.ssl_mode"),
-				SSLCert:     viper.GetString("ledger.postgresql.ssl_cert"),
-				SSLKey:      viper.GetString("ledger.postgresql.ssl_key"),
-				SSLRootCert: viper.GetString("ledger.postgresql.ssl_root_cert"),
+				Host:     viper.GetString("ledger.postgresql.host"),
+				Port:     viper.GetInt("ledger.postgresql.port"),
+				User:     viper.GetString("ledger.postgresql.user"),
+				Database: viper.GetString("ledger.postgresql.database"),
 			}
 
-			pgStore, err := ledger.NewPostgresStore(context.Background(), cfg)
+			pgStore, err := ledger.NewPostgresStore(ctx, cfg, source)
 			if err != nil {
 				log.Fatalf("Failed to connect to PostgreSQL: %v", err)
 			}
@@ -86,10 +107,6 @@ func init() {
 	ledgerCmd.Flags().Int("postgresql-port", 5432, "PostgreSQL port")
 	ledgerCmd.Flags().String("postgresql-user", "spiffe-demo-ledger", "PostgreSQL user")
 	ledgerCmd.Flags().String("postgresql-database", "trustbank", "PostgreSQL database")
-	ledgerCmd.Flags().String("postgresql-ssl-mode", "require", "PostgreSQL SSL mode")
-	ledgerCmd.Flags().String("postgresql-ssl-cert", "", "Path to client SSL certificate")
-	ledgerCmd.Flags().String("postgresql-ssl-key", "", "Path to client SSL key")
-	ledgerCmd.Flags().String("postgresql-ssl-root-cert", "", "Path to SSL root certificate")
 
 	// Bind flags to viper
 	viper.BindPFlag("ledger.use_mock", ledgerCmd.Flags().Lookup("use-mock"))
@@ -97,8 +114,4 @@ func init() {
 	viper.BindPFlag("ledger.postgresql.port", ledgerCmd.Flags().Lookup("postgresql-port"))
 	viper.BindPFlag("ledger.postgresql.user", ledgerCmd.Flags().Lookup("postgresql-user"))
 	viper.BindPFlag("ledger.postgresql.database", ledgerCmd.Flags().Lookup("postgresql-database"))
-	viper.BindPFlag("ledger.postgresql.ssl_mode", ledgerCmd.Flags().Lookup("postgresql-ssl-mode"))
-	viper.BindPFlag("ledger.postgresql.ssl_cert", ledgerCmd.Flags().Lookup("postgresql-ssl-cert"))
-	viper.BindPFlag("ledger.postgresql.ssl_key", ledgerCmd.Flags().Lookup("postgresql-ssl-key"))
-	viper.BindPFlag("ledger.postgresql.ssl_root_cert", ledgerCmd.Flags().Lookup("postgresql-ssl-root-cert"))
 }
