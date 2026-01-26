@@ -20,6 +20,7 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Spiffe   SpiffeConfig   `mapstructure:"spiffe"`
 	Customer CustomerConfig `mapstructure:"customer"`
+	Ledger   LedgerConfig   `mapstructure:"ledger"`
 }
 
 // ServerConfig contains server-related configuration.
@@ -70,4 +71,22 @@ type GCPConfig struct {
 type PostgreSQLConfig struct {
 	Host string `mapstructure:"host"`
 	User string `mapstructure:"user"`
+}
+
+// LedgerConfig contains ledger service specific configuration.
+type LedgerConfig struct {
+	UseMock    bool                    `mapstructure:"use_mock"`
+	PostgreSQL LedgerPostgreSQLConfig `mapstructure:"postgresql"`
+}
+
+// LedgerPostgreSQLConfig contains PostgreSQL configuration for the ledger service.
+type LedgerPostgreSQLConfig struct {
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	User        string `mapstructure:"user"`
+	Database    string `mapstructure:"database"`
+	SSLMode     string `mapstructure:"ssl_mode"`
+	SSLCert     string `mapstructure:"ssl_cert"`
+	SSLKey      string `mapstructure:"ssl_key"`
+	SSLRootCert string `mapstructure:"ssl_root_cert"`
 }
