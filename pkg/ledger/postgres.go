@@ -21,13 +21,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
+	"github.com/spiffe/go-spiffe/v2/bundle/x509bundle"
+	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
 
 // PostgresStore implements the Store interface using PostgreSQL.
@@ -41,18 +42,18 @@ type PostgresConfig struct {
 	Port     int
 	User     string
 	Database string
-	// SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full)
-	SSLMode string
-	// SSLCert is the path to the client certificate file (for X.509 auth)
-	SSLCert string
-	// SSLKey is the path to the client private key file (for X.509 auth)
-	SSLKey string
-	// SSLRootCert is the path to the root CA certificate file
-	SSLRootCert string
 }
 
 // NewPostgresStore creates a new PostgresStore with the given configuration.
-func NewPostgresStore(ctx context.Context, cfg PostgresConfig) (*PostgresStore, error) {
+// It requires a SPIFFE X509Source for mTLS authentication to PostgreSQL.
+//
+// SPIFFE CONCEPT: Database Authentication with X.509-SVIDs
+// Instead of using static certificates or passwords, the ledger service uses its
+// SPIFFE identity (X.509-SVID) to authenticate to PostgreSQL. The X509Source
+// automatically obtains and rotates certificates from the SPIFFE Workload API.
+// PostgreSQL is configured to trust the SPIFFE CA and map the SPIFFE ID's CN
+// (Common Name) to a database user.
+func NewPostgresStore(ctx context.Context, cfg PostgresConfig, source *workloadapi.X509Source) (*PostgresStore, error) {
 	connString := buildConnectionString(cfg)
 
 	poolConfig, err := pgxpool.ParseConfig(connString)
@@ -60,14 +61,12 @@ func NewPostgresStore(ctx context.Context, cfg PostgresConfig) (*PostgresStore, 
 		return nil, fmt.Errorf("failed to parse connection string: %w", err)
 	}
 
-	// Configure TLS if SSL certificates are provided
-	if cfg.SSLCert != "" && cfg.SSLKey != "" {
-		tlsConfig, err := buildTLSConfig(cfg)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build TLS config: %w", err)
-		}
-		poolConfig.ConnConfig.TLSConfig = tlsConfig
+	// Configure TLS using SPIFFE X509Source
+	tlsConfig, err := buildSPIFFETLSConfig(source)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build SPIFFE TLS config: %w", err)
 	}
+	poolConfig.ConnConfig.TLSConfig = tlsConfig
 
 	// Set pool configuration
 	poolConfig.MaxConns = 10
@@ -101,43 +100,67 @@ func buildConnectionString(cfg PostgresConfig) string {
 		database = "trustbank"
 	}
 
-	sslMode := cfg.SSLMode
-	if sslMode == "" {
-		sslMode = "disable"
-	}
-
+	// Always use 'require' SSL mode since we're using SPIFFE mTLS
 	return fmt.Sprintf(
-		"host=%s port=%d user=%s dbname=%s sslmode=%s",
-		cfg.Host, port, cfg.User, database, sslMode,
+		"host=%s port=%d user=%s dbname=%s sslmode=require",
+		cfg.Host, port, cfg.User, database,
 	)
 }
 
-// buildTLSConfig builds a TLS configuration for X.509 certificate authentication.
-func buildTLSConfig(cfg PostgresConfig) (*tls.Config, error) {
-	cert, err := tls.LoadX509KeyPair(cfg.SSLCert, cfg.SSLKey)
+// buildSPIFFETLSConfig builds a TLS configuration using SPIFFE X509Source.
+//
+// SPIFFE CONCEPT: Dynamic Certificate Configuration
+// The TLS config uses GetClientCertificate callback which is called on each
+// new connection. This ensures that if SPIRE rotates the certificate, the new
+// certificate is automatically used for subsequent connections without any
+// application restart or manual intervention.
+func buildSPIFFETLSConfig(source *workloadapi.X509Source) (*tls.Config, error) {
+	svid, err := source.GetX509SVID()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load client certificate: %w", err)
+		return nil, fmt.Errorf("failed to get X509-SVID: %w", err)
+	}
+
+	bundle, err := source.GetX509BundleForTrustDomain(svid.ID.TrustDomain())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get X509 bundle: %w", err)
+	}
+
+	// Convert the X.509 bundle authorities to a cert pool
+	rootCAs, err := x509CertPoolFromBundle(bundle)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cert pool: %w", err)
 	}
 
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	if cfg.SSLRootCert != "" {
-		rootCert, err := os.ReadFile(cfg.SSLRootCert)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read root certificate: %w", err)
-		}
-
-		rootCertPool := x509.NewCertPool()
-		if !rootCertPool.AppendCertsFromPEM(rootCert) {
-			return nil, fmt.Errorf("failed to append root certificate")
-		}
-		tlsConfig.RootCAs = rootCertPool
+		// GetClientCertificate is called on each connection, ensuring fresh certs
+		GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			svid, err := source.GetX509SVID()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get X509-SVID: %w", err)
+			}
+			tlsCert := &tls.Certificate{
+				Certificate: make([][]byte, len(svid.Certificates)),
+				PrivateKey:  svid.PrivateKey,
+			}
+			for i, cert := range svid.Certificates {
+				tlsCert.Certificate[i] = cert.Raw
+			}
+			return tlsCert, nil
+		},
+		RootCAs:    rootCAs,
+		MinVersion: tls.VersionTLS12,
 	}
 
 	return tlsConfig, nil
+}
+
+// x509CertPoolFromBundle creates an x509.CertPool from a SPIFFE X509Bundle.
+func x509CertPoolFromBundle(bundle *x509bundle.Bundle) (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+	for _, cert := range bundle.X509Authorities() {
+		pool.AddCert(cert)
+	}
+	return pool, nil
 }
 
 // Close closes the database connection pool.
