@@ -78,10 +78,10 @@ Endpoints:
 			log.Printf("Using SPIFFE identity: %s", svid.ID.String())
 
 			// Use PostgreSQL store with SPIFFE authentication
+			// Note: Username is automatically extracted from the SVID's Common Name
 			cfg := ledger.PostgresConfig{
 				Host:     viper.GetString("ledger.postgresql.host"),
 				Port:     viper.GetInt("ledger.postgresql.port"),
-				User:     viper.GetString("ledger.postgresql.user"),
 				Database: viper.GetString("ledger.postgresql.database"),
 			}
 
@@ -102,16 +102,15 @@ func init() {
 	rootCmd.AddCommand(ledgerCmd)
 
 	// Ledger-specific flags
+	// Note: PostgreSQL username is derived from the SPIFFE SVID's Common Name
 	ledgerCmd.Flags().Bool("use-mock", false, "Use in-memory mock store instead of PostgreSQL")
 	ledgerCmd.Flags().String("postgresql-host", "localhost", "PostgreSQL host")
 	ledgerCmd.Flags().Int("postgresql-port", 5432, "PostgreSQL port")
-	ledgerCmd.Flags().String("postgresql-user", "spiffe-demo-ledger", "PostgreSQL user")
 	ledgerCmd.Flags().String("postgresql-database", "trustbank", "PostgreSQL database")
 
 	// Bind flags to viper
 	viper.BindPFlag("ledger.use_mock", ledgerCmd.Flags().Lookup("use-mock"))
 	viper.BindPFlag("ledger.postgresql.host", ledgerCmd.Flags().Lookup("postgresql-host"))
 	viper.BindPFlag("ledger.postgresql.port", ledgerCmd.Flags().Lookup("postgresql-port"))
-	viper.BindPFlag("ledger.postgresql.user", ledgerCmd.Flags().Lookup("postgresql-user"))
 	viper.BindPFlag("ledger.postgresql.database", ledgerCmd.Flags().Lookup("postgresql-database"))
 }

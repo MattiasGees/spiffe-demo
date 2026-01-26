@@ -82,15 +82,12 @@ ledger:
     # PostgreSQL server port
     # CLI: --postgresql-port, Env: SPIFFE_DEMO_LEDGER_POSTGRESQL_PORT
     port: 5432
-    # PostgreSQL username (should match SPIFFE ID for certificate-based auth)
-    # CLI: --postgresql-user, Env: SPIFFE_DEMO_LEDGER_POSTGRESQL_USER
-    user: "spiffe-demo-ledger"
     # PostgreSQL database name
     # CLI: --postgresql-database, Env: SPIFFE_DEMO_LEDGER_POSTGRESQL_DATABASE
     database: "trustbank"
-    # Note: TLS/SSL is handled automatically via SPIFFE X.509-SVIDs.
-    # The service obtains its certificate from the SPIFFE Workload API
-    # and uses it for mTLS authentication to PostgreSQL.
+    # Note: TLS/SSL and username are handled automatically via SPIFFE X.509-SVIDs.
+    # The service obtains its certificate from the SPIFFE Workload API and uses
+    # the certificate's Common Name (CN) as the PostgreSQL username.
 
 # Backend and httpservice commands use only the global settings above
 # (server.address and spiffe.authorized_id)

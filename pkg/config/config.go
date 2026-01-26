@@ -80,10 +80,10 @@ type LedgerConfig struct {
 }
 
 // LedgerPostgreSQLConfig contains PostgreSQL configuration for the ledger service.
-// Note: SSL/TLS is handled via SPIFFE X509Source, not manual certificate paths.
+// Note: SSL/TLS and username are handled via SPIFFE X509Source.
+// The username is automatically extracted from the SVID certificate's Common Name.
 type LedgerPostgreSQLConfig struct {
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
 	Database string `mapstructure:"database"`
 }
