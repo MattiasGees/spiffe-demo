@@ -40,7 +40,6 @@ type PostgresStore struct {
 type PostgresConfig struct {
 	Host     string
 	Port     int
-	User     string
 	Database string
 }
 
@@ -51,10 +50,22 @@ type PostgresConfig struct {
 // Instead of using static certificates or passwords, the ledger service uses its
 // SPIFFE identity (X.509-SVID) to authenticate to PostgreSQL. The X509Source
 // automatically obtains and rotates certificates from the SPIFFE Workload API.
-// PostgreSQL is configured to trust the SPIFFE CA and map the SPIFFE ID's CN
-// (Common Name) to a database user.
+// PostgreSQL is configured to trust the SPIFFE CA and map the certificate's
+// Common Name (CN) to a database user - no separate username configuration needed.
 func NewPostgresStore(ctx context.Context, cfg PostgresConfig, source *workloadapi.X509Source) (*PostgresStore, error) {
-	connString := buildConnectionString(cfg)
+	// Extract username from the SVID's Common Name
+	svid, err := source.GetX509SVID()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get X509-SVID: %w", err)
+	}
+
+	// The CN from the SPIFFE certificate is used as the PostgreSQL username
+	user := svid.Certificates[0].Subject.CommonName
+	if user == "" {
+		return nil, fmt.Errorf("SVID certificate has no Common Name for database user")
+	}
+
+	connString := buildConnectionString(cfg, user)
 
 	poolConfig, err := pgxpool.ParseConfig(connString)
 	if err != nil {
@@ -89,7 +100,8 @@ func NewPostgresStore(ctx context.Context, cfg PostgresConfig, source *workloada
 }
 
 // buildConnectionString builds a PostgreSQL connection string from the config.
-func buildConnectionString(cfg PostgresConfig) string {
+// The user parameter is extracted from the SPIFFE SVID's Common Name.
+func buildConnectionString(cfg PostgresConfig, user string) string {
 	port := cfg.Port
 	if port == 0 {
 		port = 5432
@@ -103,7 +115,7 @@ func buildConnectionString(cfg PostgresConfig) string {
 	// Always use 'require' SSL mode since we're using SPIFFE mTLS
 	return fmt.Sprintf(
 		"host=%s port=%d user=%s dbname=%s sslmode=require",
-		cfg.Host, port, cfg.User, database,
+		cfg.Host, port, user, database,
 	)
 }
 
