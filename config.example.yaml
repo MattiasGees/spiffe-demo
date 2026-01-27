@@ -69,5 +69,25 @@ customer:
     # CLI: --postgresql-user, Env: SPIFFE_DEMO_CUSTOMER_POSTGRESQL_USER
     user: "spiffe_user"
 
+# Ledger service specific settings (TrustBank banking API)
+ledger:
+  # Use in-memory mock store instead of PostgreSQL (useful for development)
+  # CLI: --use-mock, Env: SPIFFE_DEMO_LEDGER_USE_MOCK
+  use_mock: false
+
+  postgresql:
+    # PostgreSQL server hostname
+    # CLI: --postgresql-host, Env: SPIFFE_DEMO_LEDGER_POSTGRESQL_HOST
+    host: "postgres.local"
+    # PostgreSQL server port
+    # CLI: --postgresql-port, Env: SPIFFE_DEMO_LEDGER_POSTGRESQL_PORT
+    port: 5432
+    # PostgreSQL database name
+    # CLI: --postgresql-database, Env: SPIFFE_DEMO_LEDGER_POSTGRESQL_DATABASE
+    database: "trustbank"
+    # Note: TLS/SSL and username are handled automatically via SPIFFE X.509-SVIDs.
+    # The service obtains its certificate from the SPIFFE Workload API and uses
+    # the certificate's Common Name (CN) as the PostgreSQL username.
+
 # Backend and httpservice commands use only the global settings above
 # (server.address and spiffe.authorized_id)

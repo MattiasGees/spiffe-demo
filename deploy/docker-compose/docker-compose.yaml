@@ -1,0 +1,178 @@
+services:
+  # SPIRE Server - the central authority that issues identities
+  spire-server:
+    image: ghcr.io/spiffe/spire-server:1.9.6
+    hostname: spire-server
+    volumes:
+      - ./spire/server.conf:/opt/spire/conf/server/server.conf:ro
+      - spire-data:/opt/spire/data
+      - spire-socket:/opt/spire/sockets
+      - join-token:/opt/spire/token
+    command: ["-config", "/opt/spire/conf/server/server.conf"]
+    healthcheck:
+      test: ["CMD", "/opt/spire/bin/spire-server", "healthcheck", "-socketPath", "/opt/spire/sockets/api.sock"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Generate join token after server is healthy
+  token-generator:
+    image: ghcr.io/spiffe/spire-server:1.9.6
+    depends_on:
+      spire-server:
+        condition: service_healthy
+    volumes:
+      - spire-socket:/opt/spire/sockets
+      - join-token:/opt/spire/token
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        TOKEN=$$(/opt/spire/bin/spire-server token generate -socketPath /opt/spire/sockets/api.sock -spiffeID spiffe://example.org/spire-agent -ttl 3600 | awk '{print $$2}')
+        echo "$$TOKEN" > /opt/spire/token/join-token
+        echo "Join token generated: $$TOKEN"
+    restart: "no"
+
+  # SPIRE Agent - runs on each node and provides workload API
+  spire-agent:
+    image: ghcr.io/spiffe/spire-agent:1.9.6
+    hostname: spire-agent
+    depends_on:
+      token-generator:
+        condition: service_completed_successfully
+    pid: "host"
+    volumes:
+      - ./spire/agent.conf:/opt/spire/conf/agent/agent.conf:ro
+      - spire-socket:/opt/spire/sockets
+      - workload-socket:/opt/spire/workload-sockets
+      - join-token:/opt/spire/token:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        TOKEN=$$(cat /opt/spire/token/join-token)
+        echo "Using join token: $$TOKEN"
+        /opt/spire/bin/spire-agent run -config /opt/spire/conf/agent/agent.conf -joinToken "$$TOKEN"
+    healthcheck:
+      test: ["CMD", "/opt/spire/bin/spire-agent", "healthcheck", "-socketPath", "/opt/spire/workload-sockets/agent.sock"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # Registration helper - creates SPIRE entries after agent is ready
+  spire-register:
+    image: ghcr.io/spiffe/spire-server:1.9.6
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+    volumes:
+      - spire-socket:/opt/spire/sockets
+      - ./spire/registration.sh:/opt/spire/registration.sh:ro
+    entrypoint: ["/bin/sh", "/opt/spire/registration.sh"]
+    restart: "no"
+
+  # SPIFFE Helper for PostgreSQL - fetches SVIDs and writes to disk
+  postgres-spiffe-helper:
+    image: ghcr.io/spiffe/spiffe-helper:0.8.0
+    hostname: postgres-spiffe-helper
+    depends_on:
+      spire-register:
+        condition: service_completed_successfully
+    environment:
+      SPIFFE_ENDPOINT_SOCKET: unix:///opt/spire/workload-sockets/agent.sock
+    volumes:
+      - workload-socket:/opt/spire/workload-sockets:ro
+      - ./spire/postgres-helper.conf:/etc/spiffe-helper.conf:ro
+      - postgres-certs:/certs
+    command: ["-config", "/etc/spiffe-helper.conf"]
+    healthcheck:
+      test: ["CMD", "test", "-f", "/certs/svid.pem"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    labels:
+      - "com.docker.compose.service=postgres-spiffe-helper"
+
+  # PostgreSQL with certificate authentication
+  postgres:
+    image: postgres:16-alpine
+    hostname: postgres
+    depends_on:
+      postgres-spiffe-helper:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trustbank
+    volumes:
+      - ./postgres/init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql:ro
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - postgres-data:/var/lib/postgresql/data
+      - postgres-certs:/certs:ro
+    command: >
+      postgres
+      -c ssl=on
+      -c ssl_cert_file=/certs/svid.pem
+      -c ssl_key_file=/certs/svid_key.pem
+      -c ssl_ca_file=/certs/bundle.pem
+      -c hba_file=/etc/postgresql/pg_hba.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d trustbank"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    labels:
+      - "com.docker.compose.service=postgres"
+
+  # TrustBank Ledger Service
+  ledger:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      spire-agent:
+        condition: service_healthy
+    environment:
+      SPIFFE_ENDPOINT_SOCKET: unix:///opt/spire/workload-sockets/agent.sock
+    volumes:
+      - workload-socket:/opt/spire/workload-sockets:ro
+    command: >
+      ledger
+      --server-address 0.0.0.0:8443
+      --authorized-spiffe spiffe://example.org/customer
+      --postgresql-host postgres
+      --postgresql-database trustbank
+    ports:
+      - "8443:8443"
+    labels:
+      - "com.docker.compose.service=ledger"
+
+  # Test client - simulates the customer service
+  test-client:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    depends_on:
+      ledger:
+        condition: service_started
+      spire-agent:
+        condition: service_healthy
+    environment:
+      SPIFFE_ENDPOINT_SOCKET: unix:///opt/spire/workload-sockets/agent.sock
+      LEDGER_URL: https://ledger:8443
+    volumes:
+      - workload-socket:/opt/spire/workload-sockets:ro
+    entrypoint: ["/bin/sh", "-c", "echo 'Test client ready. Use: make test-client' && sleep infinity"]
+    labels:
+      - "com.docker.compose.service=test-client"
+    profiles:
+      - test
+
+volumes:
+  spire-data:
+  spire-socket:
+  workload-socket:
+  join-token:
+  postgres-data:
+  postgres-certs:

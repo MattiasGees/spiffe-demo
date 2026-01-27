@@ -20,6 +20,7 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Spiffe   SpiffeConfig   `mapstructure:"spiffe"`
 	Customer CustomerConfig `mapstructure:"customer"`
+	Ledger   LedgerConfig   `mapstructure:"ledger"`
 }
 
 // ServerConfig contains server-related configuration.
@@ -70,4 +71,19 @@ type GCPConfig struct {
 type PostgreSQLConfig struct {
 	Host string `mapstructure:"host"`
 	User string `mapstructure:"user"`
+}
+
+// LedgerConfig contains ledger service specific configuration.
+type LedgerConfig struct {
+	UseMock    bool                    `mapstructure:"use_mock"`
+	PostgreSQL LedgerPostgreSQLConfig `mapstructure:"postgresql"`
+}
+
+// LedgerPostgreSQLConfig contains PostgreSQL configuration for the ledger service.
+// Note: SSL/TLS and username are handled via SPIFFE X509Source.
+// The username is automatically extracted from the SVID certificate's Common Name.
+type LedgerPostgreSQLConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Database string `mapstructure:"database"`
 }
