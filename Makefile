@@ -75,7 +75,8 @@ publish:
 
 # ==================== Docker Compose Development Environment ====================
 COMPOSE_DIR := deploy/docker-compose
-COMPOSE := docker compose -f $(COMPOSE_DIR)/docker-compose.yaml
+# Support both old (docker-compose) and new (docker compose) commands
+COMPOSE := $(shell if command -v docker-compose >/dev/null 2>&1; then echo "docker-compose -f $(COMPOSE_DIR)/docker-compose.yaml"; else echo "docker compose -f $(COMPOSE_DIR)/docker-compose.yaml"; fi)
 
 .PHONY: dev-up # Start the development environment with SPIRE and PostgreSQL
 dev-up:

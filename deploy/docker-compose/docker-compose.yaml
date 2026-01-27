@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # SPIRE Server - the central authority that issues identities
   spire-server:
