@@ -1,8 +1,26 @@
-.DEFAULT_GOAL := build
+.DEFAULT_GOAL := help
 
 IMAGE_NAME ?= mattiasgees/spiffe-demo:latest
 
-.PHONY: test
+.PHONY: help # Show this help message
+help:
+	@echo "SPIFFE Demo - Available Commands"
+	@echo "================================="
+	@echo ""
+	@echo "Build & Publish:"
+	@grep -E '^\.PHONY: (build|publish|test) ' $(MAKEFILE_LIST) | sed 's/\.PHONY: /  make /' | sed 's/ # /\t- /'
+	@echo ""
+	@echo "Development Environment:"
+	@grep -E '^\.PHONY: dev-' $(MAKEFILE_LIST) | sed 's/\.PHONY: /  make /' | sed 's/ # /\t- /'
+	@grep -E '^\.PHONY: test-client' $(MAKEFILE_LIST) | sed 's/\.PHONY: /  make /' | sed 's/ # /\t- /'
+	@echo ""
+	@echo "Quick Start:"
+	@echo "  make dev-up      # Start SPIRE + PostgreSQL + Ledger"
+	@echo "  make dev-logs    # Watch the logs"
+	@echo "  make test-client # Start test client container"
+	@echo "  make dev-down    # Stop everything"
+
+.PHONY: test # Run unit tests
 test:
 	go test -v ./...
 INIT_IMAGE_NAME ?= mattiasgees/spiffe-demo-init:latest
